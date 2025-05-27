@@ -56,18 +56,6 @@ class Module(nn.Module):
         return self.origin_size
 
     def forward_graph(self, input):
-        """
-        forward_graph(Any):
-
-        Return:
-            weight_graph : A Tensor is the graph of the weight.
-            bias_graph : A Tensor is the graph of the bias.
-
-        Example:
-            >>> def forward_graph(...):
-            >>>     ....
-            >>>     return weight_graph, bias_graph
-        """
         raise NotImplementedError()
 
     def train(self, mode: bool = True):

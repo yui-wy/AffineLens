@@ -19,9 +19,8 @@ class Analysis:
         self.with_dataset = with_dataset
 
     def analysis(self) -> None:
-        # draw dataset distribution
+        # Draw dataset distribution
         self.common()
-        # get data
         if not self.with_analysis:
             return
         experiment_dict = {}
@@ -41,10 +40,9 @@ class Analysis:
                 net_reigions = torch.load(net_reigions_path, weights_only=False)
                 tag_dict[epoch] = net_reigions
             experiment_dict[tag] = tag_dict
-        # save dir
         save_dir = os.path.join(self.root_dir, "analysis")
         os.makedirs(save_dir, exist_ok=True)
-        # draw picture
+        # Draw picture
         self.draw(experiment_dict, save_dir)
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:

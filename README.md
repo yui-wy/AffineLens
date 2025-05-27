@@ -4,7 +4,7 @@ A sample library for linear graph (weight and bias) of DNNs in [PyTorch](https:/
 
 ## Features
 
-- An thin extension of PyTorch's Module, called AysBaseModule, that simplifies the creation of certain graph models. See the example for an example using AysBaseModule.
+- An thin extension of PyTorch's Module, that simplifies the creation of certain graph models.
 - This library can generate the linear graph of DNNs easily by forward process.
 - We will update this library to support more modules.
 
@@ -28,10 +28,9 @@ This example shows how to create a module to generate the linear graph. This exa
 ```python
 import numpy as np
 import torch
-from torch import Tensor
 
 from torchays import nn
-from torchays.nn.modules import get_origin_size
+from torchays.nn.modules import Tensor
 
 GPU_ID = 0
 device = torch.device('cuda', GPU_ID) if torch.cuda.is_available() else torch.device('cpu')
@@ -64,24 +63,20 @@ class TestNet(nn.Module):
         x = self.linear(x)
         return x
 
-    def forward_graph(self, x, weight_graph: Tensor = None, bias_graph: Tensor = None):
-        input_size = get_origin_size(x, weight_graph)
-        bias_graph = bias_graph.reshape(bias_graph.size(0), -1)
-        weight_graph = weight_graph.reshape(weight_graph.size(0), -1, *input_size)
-        return weight_graph, bias_graph
 
+if __name__ == "__main__":
+    net = TestNet().to(device)
+    data = torch.randn(2, 3, 8, 8).to(device)
 
-net = TestNet().to(device)
-data = torch.randn(2, 3, 8, 8).to(device)
-
-net.graph()
-with torch.no_grad():
-    output, graph = net(data)
-    weight_graph, bias_graph = graph.get("weight_graph"), graph.get("bias_graph")
-    print(output)
-    for i in range(output.size(0)):
-        output = (weight_graph[i] * data[i]).sum(dim=(1, 2, 3)) + bias_graph[i]
+    net.graph()
+    with torch.no_grad():
+        output: Tensor = net(data)
+        weight, bias = output.weight_graph, output.bias_graph
         print(output)
+        for i in range(output.size(0)):
+            output = (weight[i] * data[i]).sum(dim=(1, 2, 3)) + bias[i]
+            print(output)
+
 ```
 
 ### Linear Regions of ReLU DNNs

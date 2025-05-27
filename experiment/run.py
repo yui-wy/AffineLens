@@ -4,11 +4,12 @@ from typing import Callable
 import numpy as np
 import torch
 
-from config import ANALYSIS, CIFAR10, COMMON, EXPERIMENT, GLOBAL, MNIST, PATH, TESTNET, TOY, TRAIN, TYPE
 from dataset import Classification, Dataset, GaussianQuantiles, Mnist, Moon, Random, cifar
-from experiment import Analysis, Experiment, TrainHandler
 from torchays.cpa import Model, ProjectWrapper
 from torchays.models import CIFARLinearNet, CIFARNet, LeNet, TestNetLinear
+
+from .config import ANALYSIS, CIFAR10, COMMON, EXPERIMENT, GLOBAL, MNIST, PATH, TESTNET, TOY, TRAIN, TYPE
+from .core import Analysis, Experiment, TrainHandler
 
 
 def init_fun(seed: int = 0):
@@ -71,17 +72,14 @@ def net():
             if CIFAR10.LINEAR:
                 return CIFARLinearNet(CIFAR10.NORM_LAYER, GLOBAL.NAME)
             return CIFARNet(CIFAR10.NORM_LAYER, GLOBAL.NAME)
-
-        else:
-            # Toy
-            return TestNetLinear(
-                in_features=TOY.IN_FEATURES,
-                layers=TESTNET.N_LAYERS,
-                name=GLOBAL.NAME,
-                n_classes=n_classes,
-                norm_layer=TESTNET.NORM_LAYER,
-            )
-        return model
+        # Toy
+        return TestNetLinear(
+            in_features=TOY.IN_FEATURES,
+            layers=TESTNET.N_LAYERS,
+            name=GLOBAL.NAME,
+            n_classes=n_classes,
+            norm_layer=TESTNET.NORM_LAYER,
+        )
 
     return wrapper
 

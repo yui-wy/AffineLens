@@ -3,14 +3,12 @@ import os
 from typing import Callable, Dict, List, Tuple
 
 import matplotlib
-import matplotlib.axis
 import matplotlib.pyplot as plt
 import numpy as np
-import polytope as pc
 import torch
 
 from torchays import nn
-from torchays.graph import COLOR, color, plot_regions, plot_regions_3d, default_subplots
+from torchays.graph import COLOR, color, default_subplots, plot_regions, plot_regions_3d
 
 
 def bar(

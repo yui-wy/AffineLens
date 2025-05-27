@@ -4,14 +4,12 @@ from typing import Callable, Dict, List
 import torch
 from torch.nn.parameter import Parameter
 
-from config import ANALYSIS, CIFAR10, EXPERIMENT, GLOBAL, PATH, TESTNET, TOY, TRAIN, TYPE
-from experiment import TrainHandler
-from experiment.draw import bar
-from run import dataset, net, proj_net, run
+from experiment import ANALYSIS, CIFAR10, COMMON, EXPERIMENT, GLOBAL, PATH, TESTNET, TOY, TRAIN, TYPE, TrainHandler, dataset, net, proj_net, run
+from experiment.core.draw import bar
 from torchays import nn
+from torchays.graph import color, default_subplots
 from torchays.nn.modules.batchnorm import _BatchNorm
 from torchays.nn.modules.norm import _Norm
-from torchays.graph import color, default_subplots
 
 
 def value(v: torch.Tensor) -> torch.Tensor:

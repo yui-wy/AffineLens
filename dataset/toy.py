@@ -188,7 +188,7 @@ class Random(Toy):
         return data, classes, self.n_classes
 
     def name(self):
-        return f"{self.type}-{self.n_samples}-{self.in_features}-{self.seed}"
+        return f"{self.type}-{self.n_samples}-{self.in_features}-{self.n_classes}-{self.seed}"
 
 
 class Classification(Toy):

@@ -20,6 +20,15 @@ class Model(Module):
 
 
 class ProjectWrapper(Model):
+    """This implementation performs statistics on the slice linear regions of high-dimensional inputs.
+    This is achieved by encapsulating the original network with a linear layer.
+
+    Args:
+        model: model which will be counted
+        proj_dims: the slice dims of the input
+        proj_values: the values of the other dims(including the slice dims but they are useless.)
+    """
+
     def __init__(
         self,
         model: Model,
@@ -47,7 +56,7 @@ class ProjectWrapper(Model):
             dim = proj_dims[i]
             # bias is 0, weight is 1 for project dim.
             _weight[dim][i] = 1
-            # others, weight is 0，bias is input；
+            # others, weight is 0, bias is input；
             _bias[dim] = 0
         self.wrapper_layers.weight = Parameter(_weight)
         self.wrapper_layers.bias = Parameter(_bias)

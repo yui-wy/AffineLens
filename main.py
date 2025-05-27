@@ -3,13 +3,12 @@ from typing import Iterable, List, Tuple
 
 import torch
 
-from config import ANALYSIS, CIFAR10, COMMON, EXPERIMENT, GLOBAL, PATH, TESTNET, TOY, TRAIN, TYPE
-from run import dataset, net, proj_net, run
+from experiment import ANALYSIS, CIFAR10, COMMON, EXPERIMENT, GLOBAL, PATH, TESTNET, TOY, TRAIN, TYPE, dataset, net, proj_net, run
 from torchays import nn
 
 
 def config():
-    COMMON.GPU_ID = 7
+    COMMON.GPU_ID = 0
 
     TRAIN.TRAIN = True
     TRAIN.MAX_EPOCH = 5000
@@ -150,6 +149,7 @@ def lab4(
 
         EXPERIMENT.PROJ_DIM = proj_dim
         EXPERIMENT.PROJ_VALUES = proj_values
+        EXPERIMENT.DEPTH
 
     return config_fn
 
@@ -188,6 +188,7 @@ def main():
 
 if __name__ == "__main__":
     # lab1：深度和神经元和输入维度，如何影响到区域数量的. ReLU激活函数, 不考虑BN.
+    # 验证：区域数量与深度和宽度的关系。
     lab1_conf = [
         # ====================================================================
         # Moon
@@ -199,14 +200,20 @@ if __name__ == "__main__":
         *[lab1(TYPE.Moon, [16, 16 * (2**i)]) for i in range(0, 5)],
         *[lab1(TYPE.Moon, [16 * (2**i), 16]) for i in range(0, 5)],
         # ====================================================================
-        # Random-feat_4
+        # Random-feat_2
         # 1. 单层MLP情况下, 随着宽度增加, 区域数量的增长关系;
-        *[lab1(TYPE.Random, [16 * (2**i)]) for i in range(0, 6)],
+        *[lab1(TYPE.Random, [32 * (2**i)]) for i in range(0, 6)],
         # 2. 多层MLP情况下, 每一层神经元数量固定, 如何影响到区域数量;
-        *[lab1(TYPE.Random, [16] * i) for i in range(2, 10)],
+        *[lab1(TYPE.Random, [32] * i) for i in range(2, 10)],
         # 3. 多层MLP情况下, 随着某一层的宽度变动, 区域数量的增加关系;
-        *[lab1(TYPE.Random, [16, 16 * (2**i)]) for i in range(0, 5)],
-        *[lab1(TYPE.Random, [16 * (2**i), 16]) for i in range(0, 5)],
+        *[lab1(TYPE.Random, [32, 32 * (2**i)]) for i in range(1, 4)],
+        *[lab1(TYPE.Random, [32 * (2**i), 32]) for i in range(1, 4)],
+        # 4. 浅层宽度的增加与深层宽度的增加对区域带来的影响;
+        *[lab1(TYPE.Random, [32 * (2**i), 32, 32, 32, 32]) for i in range(0, 4)],
+        *[lab1(TYPE.Random, [32, 32 * (2**i), 32, 32, 32]) for i in range(1, 4)],
+        *[lab1(TYPE.Random, [32, 32, 32 * (2**i), 32, 32]) for i in range(1, 4)],
+        *[lab1(TYPE.Random, [32, 32, 32, 32 * (2**i), 32]) for i in range(1, 4)],
+        *[lab1(TYPE.Random, [32, 32, 32, 32, 32 * (2**i)]) for i in range(1, 4)],
         # ====================================================================
         # Random-feat_3
         # 1. 单层MLP情况下, 随着宽度增加, 区域数量的增长关系;
@@ -225,9 +232,11 @@ if __name__ == "__main__":
         # 3. 多层MLP情况下, 随着某一层的宽度变动, 区域数量的增加关系;
         *[lab1(TYPE.Random, [16, 16 * (2**i)], in_features=4) for i in range(1, 4)],
         *[lab1(TYPE.Random, [16 * (2**i), 16], in_features=4) for i in range(1, 4)],
+        # ====================================================================
     ]
 
-    # lab2：层级中, 线性区域中穿越的超平面数量的分析;(再议)
+    # lab2：层级中, 线性区域中穿越的超平面数量的分析;
+    # 假设：随着层数增加，每一层的区域，会产生更少的子区域。（新增区域数量减少），且每个更多的区域只产生一个子区域。
     lab2_conf = [
         # Moon基础模型分析
         lab2("Linear-[32,32,32]", TYPE.Moon, [32] * 3, nn.Norm1d),
@@ -253,6 +262,7 @@ if __name__ == "__main__":
     ]
 
     # lab3：CNN线性区域的投影面的分析, 与splinecam不同;
+    # 对比实验：验证CNN下的线性区域切面；
     lab3_conf = [
         # CIFAI-10, Linear的投影.
         *[lab3("CIFAR10-Linear", TYPE.CIFAR10, nn.Norm1d, linear=True, **random_proj((3, 32, 32))) for _ in range(10)],
@@ -273,9 +283,9 @@ if __name__ == "__main__":
 
     configs = [
         *lab1_conf,
-        # *lab2_conf,
-        # *lab3_conf,
-        # *lab4_conf,
+        *lab2_conf,
+        *lab3_conf,
+        *lab4_conf,
     ]
     for lab_config in configs:
         lab_config()

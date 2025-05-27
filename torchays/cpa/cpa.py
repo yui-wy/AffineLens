@@ -58,12 +58,10 @@ class CPAFactory:
 
 
 class CPA:
-    """
-    CPA needs to ensure that the net has the function:
-        >>> def forward_layer(*args, depth=depth):
-        >>>     ''' layer is a "int" before every ReLU module. "Layer" can get the layer weight and bias graph.'''
-        >>>     if depth == 1:
-        >>>         return output
+    """This tool enables the statistical analysis of neural network CPA (Continuous Piecewise Affine function).
+    It has two main functionalities:
+    1. Counting the number of linear regions within the network;
+    2. Obtaining the boundary functions of the specific linear region associated with a fixed input.
     """
 
     def __init__(
@@ -83,7 +81,7 @@ class CPA:
         self.device = device
         self.logging = logging
         self.logger = logger
-        # muiti-processing
+        # multi-processing
         self.workers, self.pool = 1, None
         if workers > 1:
             self.workers = workers
@@ -112,9 +110,10 @@ class CPA:
         bounds: float | int | Tuple[float, float] | Tuple[Tuple[float, float]] = 1.0,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
-        funcs: affine functions which constructs the region.
-        region: the funcs > 0?
-        neural_funcs: all neural functions in the parent region.
+        Args:
+            funcs: affine functions which constructs the region.
+            region: the funcs > 0?
+            neural_funcs: all neural functions in the parent region.
         """
         # Initialize the parameters
         self.net.origin_size = point.size()
@@ -136,7 +135,7 @@ class CPA:
             cpa_cache = self.cpa_handler.cpa_cache_factory().cpa_cache()
             # Get hyperplanes.
             c_funcs = self._functions(p_cpa.point, p_cpa.depth)
-            intersect_funcs = self._find_intersect(p_cpa, c_funcs)
+            intersect_funcs, _ = self._find_intersect(p_cpa, c_funcs)
             if intersect_funcs is None:
                 c_cpa = CPAFunc(p_cpa.funcs, p_cpa.region, p_cpa.point, p_cpa.depth + 1)
                 self._nn_region_counts(c_cpa, cpa_set.register, cpa_cache.cpa)
@@ -403,7 +402,7 @@ class CPA:
     def _optimize_child_region(self, p_cpa: CPAFunc, c_funcs: torch.Tensor, c_region: torch.Tensor) -> Tuple[CPAFunc, torch.Tensor, List[torch.Tensor]]:
         """
         1. Check if the region is existed.
-        2. Get the neighbor regions and the functions of the region edges.;
+        2. Get the neighbor regions and the functions of the region edges.
         """
         funcs, region = torch.cat([c_funcs, p_cpa.funcs], dim=0), torch.cat([c_region, p_cpa.region], dim=0)
         # ax+b >= 0

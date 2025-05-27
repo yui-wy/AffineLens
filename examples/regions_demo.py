@@ -4,7 +4,6 @@ import polytope as pc
 import torch
 
 from torchays import nn
-from torchays.cpa import CPA
 from torchays.cpa.cpa import CPAFactory
 from torchays.cpa.handler import BaseHandler
 

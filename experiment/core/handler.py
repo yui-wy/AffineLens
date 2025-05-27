@@ -15,7 +15,7 @@ class Handler(BaseHandler):
         if with_regions:
             self._init_region()
         if with_hpas:
-            self._init_inner_hyperplanes
+            self._init_inner_hyperplanes()
 
     def _init_region(self):
         self.funs = list()

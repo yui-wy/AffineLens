@@ -48,7 +48,7 @@ class HyperplaneArrangements:
         return hpa.p_funs.size(1) - 1 == 2
 
     def statistics_intersect(self):
-        # 统计每一层与父区域相交的神经元数量。
+        # Count the number of neurons in each layer that intersect with the parent region.
         p_dir = os.path.join(self.root_dir, "hpa_statistics")
         os.makedirs(p_dir, exist_ok=True)
         counts_csv = CSV(os.path.join(p_dir, "counts.csv"))
@@ -103,7 +103,6 @@ class HyperplaneArrangements:
         # save csv
         counts_csv.save()
         save_csvs(counts_statistic_csv, counts_scales_csv, avg_csv)
-        # plot, 考虑概率和期望模型
         self._draw_statistic(p_dir, statistic_dict, max_neural_num, STATISTIC_COUNT, "statistic counts", "counts")
 
     def _get_statistics(self) -> Dict[str, Dict[str, int | List]]:
@@ -136,7 +135,7 @@ class HyperplaneArrangements:
         name: str = "",
         y_label: str = "",
     ):
-        # 统计在不同深度下，有多少区域里面存在中间神经元，以及中间神经元的个数
+        # At different depths, count how many regions contain intermediate neurons and the number of intermediate neurons within each region.
         if name == "":
             name = key
         fig = plt.figure(0, figsize=(8, 7), dpi=600)
@@ -184,7 +183,6 @@ class HyperplaneArrangements:
         if not self._check_dim(hpa):
             raise NotImplementedError("draw weight scatter can only be used on 2 dim.")
 
-        # 绘制权重向量的散点 3d 散点图
         # weight of AX+b > 0
         def draw_weight(ax: plt.Axes, funs: torch.Tensor, color: Callable[[int], str], *args, **kwds) -> np.ndarray:
             scale_rate = (funs[:, 0].square() + funs[:, 1].square()).sqrt().unsqueeze(1)

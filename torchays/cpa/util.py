@@ -83,7 +83,6 @@ def _tuple_bound(bounds: Tuple[float, float], dim: int = 2) -> BoundTypes:
     inner_point = torch.ones(dim) * (low + upper) / 2
     lows, uppers = torch.zeros(dim) + low, torch.zeros(dim) + upper
     o_bound = [(low, upper) for _ in range(dim)]
-    # for x_bias
     o_bound.append((None, None))
     return *_bound_regions(lows, uppers, dim), inner_point, tuple(o_bound)
 
@@ -98,7 +97,6 @@ def _tuple_bounds(bounds: Tuple[Tuple[float, float]], dim: int = 2) -> BoundType
         lows[i], uppers[i] = low, upper
         inner_point[i] = (low + upper) / 2
         o_bound.append((low, upper))
-    # for x_bias
     o_bound.append((None, None))
     return *_bound_regions(lows, uppers, dim), inner_point, tuple(o_bound)
 
