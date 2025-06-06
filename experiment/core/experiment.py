@@ -28,20 +28,19 @@ def accuracy(x, classes):
 class _base:
     def __init__(
         self,
-        save_dir: str,
+        root_dir: str,
         *,
         net: Callable[[int, bool], Model] = None,
         dataset: Callable[..., Tuple[data.Dataset, int]] = None,
         save_epoch: List[int] = [100],
         device: torch.device = torch.device('cpu'),
     ) -> None:
-        self.save_dir = save_dir
+        self.root_dir = root_dir
         self.net = net
         self.dataset = dataset
         self.save_epoch = save_epoch
         self.device = device
         self.training = True
-        self.root_dir = None
 
     def _init_model(self):
         dataset, n_classes = self.dataset()
@@ -50,7 +49,6 @@ class _base:
         return net, dataset, n_classes
 
     def _init_dir(self, net: Model):
-        self.root_dir = os.path.join(self.save_dir, net.name)
         self.model_dir = os.path.join(self.root_dir, "model")
         exp_dir = "experiment"
         if isinstance(net, ProjectWrapper) and net.proj_dim is not None:
@@ -81,7 +79,7 @@ class _base:
 class Train(_base):
     def __init__(
         self,
-        save_dir: str,
+        root_dir: str,
         net: Callable[[int, bool], Model],
         dataset: Callable[..., Tuple[data.Dataset, int]],
         *,
@@ -93,7 +91,7 @@ class Train(_base):
         device: torch.device = torch.device('cpu'),
     ) -> None:
         super().__init__(
-            save_dir,
+            root_dir,
             net=net,
             dataset=dataset,
             save_epoch=save_epoch,
@@ -159,7 +157,7 @@ class Train(_base):
 class _cpa(_base):
     def __init__(
         self,
-        save_dir: str,
+        root_dir: str,
         net: Callable[[int, bool], Model],
         dataset: Callable[..., Tuple[data.Dataset, int]],
         *,
@@ -170,7 +168,7 @@ class _cpa(_base):
         device: torch.device = torch.device('cpu'),
     ) -> None:
         super().__init__(
-            save_dir,
+            root_dir,
             net=net,
             dataset=dataset,
             save_epoch=save_epoch,
@@ -199,7 +197,7 @@ class _cpa(_base):
 class CPAs(_cpa):
     def __init__(
         self,
-        save_dir: str,
+        root_dir: str,
         net: Callable[[int, bool], Model],
         dataset: Callable[..., Tuple[data.Dataset, int]],
         *,
@@ -215,7 +213,7 @@ class CPAs(_cpa):
         device: torch.device = torch.device('cpu'),
     ):
         super().__init__(
-            save_dir,
+            root_dir,
             net,
             dataset,
             save_epoch=save_epoch,
@@ -260,7 +258,7 @@ class CPAs(_cpa):
                 # CPA
                 handler = Handler(self.is_draw, self.is_hpas)
                 logger = get_logger(
-                    f"{net.name}-{randint(-100,100)}-region_{os.path.splitext(model_name)[0]}",
+                    f"{randint(-100,100)}-region_{os.path.splitext(model_name)[0]}",
                     os.path.join(save_dir, "region.log"),
                     multi=self.multi,
                 )
@@ -304,7 +302,7 @@ class Points(_cpa):
 
     def __init__(
         self,
-        save_dir: str,
+        root_dir: str,
         *,
         net: Callable[[int, bool], Model],
         dataset: Callable[..., Tuple[data.Dataset, int]],
@@ -315,7 +313,7 @@ class Points(_cpa):
         device=torch.device('cpu'),
     ):
         super().__init__(
-            save_dir,
+            root_dir,
             net,
             dataset,
             save_epoch=save_epoch,
@@ -380,7 +378,7 @@ class Points(_cpa):
 class Experiment(_base):
     def __init__(
         self,
-        save_dir: str,
+        root_dir: str,
         init_fun: Callable[..., None],
         *,
         net: Callable[[int, bool], Model],
@@ -389,7 +387,7 @@ class Experiment(_base):
         device: torch.device = torch.device('cpu'),
     ) -> None:
         super().__init__(
-            save_dir,
+            root_dir,
             net=net,
             dataset=dataset,
             save_epoch=save_epoch,
@@ -421,7 +419,7 @@ class Experiment(_base):
         train_handler: TrainHandler = None,
     ):
         train = Train(
-            save_dir=self.save_dir,
+            root_dir=self.root_dir,
             net=self.net,
             dataset=self.dataset,
             save_epoch=self.save_epoch,
@@ -445,7 +443,7 @@ class Experiment(_base):
         is_statistic_hpas: bool = False,
     ):
         cpas = CPAs(
-            save_dir=self.save_dir,
+            root_dir=self.root_dir,
             net=self.net,
             dataset=self.dataset,
             save_epoch=self.save_epoch,
@@ -468,7 +466,7 @@ class Experiment(_base):
         depth: int = -1,
     ):
         points = Points(
-            save_dir=self.save_dir,
+            root_dir=self.root_dir,
             net=self.net,
             dataset=self.dataset,
             save_epoch=self.save_epoch,

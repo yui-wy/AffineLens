@@ -8,7 +8,7 @@ from dataset import Classification, Dataset, GaussianQuantiles, Mnist, Moon, Ran
 from torchays.cpa import Model, ProjectWrapper
 from torchays.models import CIFARLinearNet, CIFARNet, LeNet, TestNetLinear
 
-from .config import ANALYSIS, CIFAR10, COMMON, EXPERIMENT, GLOBAL, MNIST, PATH, TESTNET, TOY, TRAIN, TYPE
+from .config import ANALYSIS, CIFAR10, COMMON, EXPERIMENT, GLOBAL, MNIST, PATH, TESTNET, TOY, TRAIN, TYPE, configs
 from .core import Analysis, Experiment, TrainHandler
 
 
@@ -70,53 +70,17 @@ def net():
         elif GLOBAL.TYPE == TYPE.CIFAR10:
             # CIFARNet
             if CIFAR10.LINEAR:
-                return CIFARLinearNet(CIFAR10.NORM_LAYER, GLOBAL.NAME)
-            return CIFARNet(CIFAR10.NORM_LAYER, GLOBAL.NAME)
+                return CIFARLinearNet(CIFAR10.NORM_LAYER)
+            return CIFARNet(CIFAR10.NORM_LAYER)
         # Toy
         return TestNetLinear(
             in_features=TOY.IN_FEATURES,
             layers=TESTNET.N_LAYERS,
-            name=GLOBAL.NAME,
             n_classes=n_classes,
             norm_layer=TESTNET.NORM_LAYER,
         )
 
     return wrapper
-
-
-def print_cfg():
-    print("-----------------------------------------------")
-    print("Configuration:")
-    print(f"Name: {GLOBAL.NAME}")
-    print(f"Random Seed: {COMMON.SEED}")
-    print(f"Dataset: {GLOBAL.TYPE}")
-    print(f"GPU_ID: {COMMON.GPU_ID}")
-    if GLOBAL.TYPE == TYPE.MNIST:
-        print(f"Net: LeNet")
-    elif GLOBAL.TYPE == TYPE.CIFAR10:
-        print(f"Net: CIFARNet")
-        print(f"|   Linear Model: {CIFAR10.LINEAR}")
-        print(f"|   NormLayer: {CIFAR10.NORM_LAYER.__name__}")
-    else:
-        print(f"|   n_samples: {TOY.N_SAMPLES}")
-        print(f"|   n_class: {TOY.N_CLASSES}")
-        print(f"|   in_feature: {TOY.IN_FEATURES}")
-        print(f"Net: TestNetLinear")
-        print(f"|   Layers: {TESTNET.N_LAYERS}")
-        print(f"|   NormLayer: {TESTNET.NORM_LAYER.__name__}")
-    print(f"Action:")
-    print(f"|   Train: {TRAIN.TRAIN}")
-    print(f"|   CPAS: {EXPERIMENT.CPAS}")
-    print(f"|       WORKS: {EXPERIMENT.WORKERS}")
-    print(f"|       WITH_DRAW: {EXPERIMENT.WITH_DRAW}")
-    print(f"|       WITH_DRAW_3D: {EXPERIMENT.WITH_DRAW_3D}")
-    print(f"|       WITH_DRAW_HPAS: {EXPERIMENT.WITH_DRAW_HPAS}")
-    print(f"|       WITH_STATISTIC_HPAS: {EXPERIMENT.WITH_STATISTIC_HPAS}")
-    print(f"|       PROJ_DIM: {EXPERIMENT.PROJ_DIM}")
-    print(f"|   Point: {EXPERIMENT.POINT}")
-    print(f"|   Analysis: {ANALYSIS.WITH_ANALYSIS}")
-    print(f"|   Draw dataset: {ANALYSIS.WITH_DATASET}")
-    print("-----------------------------------------------")
 
 
 def run(
@@ -126,12 +90,12 @@ def run(
     init_fun: Callable[[int], None] = init_fun,
     train_handler: TrainHandler = None,
 ):
-    print_cfg()
-    save_dir = dataset.path
-    os.makedirs(save_dir, exist_ok=True)
+    root_dir = os.path.join(dataset.path, GLOBAL.NAME)
+    os.makedirs(root_dir, exist_ok=True)
+    configs(root_dir)
     device = torch.device('cuda', COMMON.GPU_ID) if torch.cuda.is_available() else torch.device('cpu')
     exp = Experiment(
-        save_dir=save_dir,
+        root_dir=root_dir,
         net=net,
         dataset=dataset.make_dataset,
         init_fun=init_fun(COMMON.SEED),
@@ -167,7 +131,7 @@ def run(
 
     # Analysis
     analysis = Analysis(
-        root_dir=save_dir,
+        root_dir=dataset.path,
         with_analysis=ANALYSIS.WITH_ANALYSIS,
         with_dataset=ANALYSIS.WITH_DATASET,
     )

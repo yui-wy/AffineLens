@@ -6,10 +6,8 @@ class CIFARNet(Model):
     def __init__(
         self,
         norm_layer=nn.BatchNorm2d,
-        name: str = "CIFARNet",
     ):
         super().__init__()
-        self.name = name
         self.depth = 3
 
         self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=2, padding=1)
@@ -100,10 +98,8 @@ class CIFARLinearNet(Model):
     def __init__(
         self,
         norm_layer=nn.BatchNorm1d,
-        name: str = "CIFARLinearNet",
     ):
         super().__init__()
-        self.name = name
         self.depth = 2
         self.flatten = nn.Flatten(1)
         self.fc1 = nn.Linear(3 * 32 * 32, 512)

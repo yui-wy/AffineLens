@@ -9,11 +9,6 @@ from ..nn.modules import BIAS_GRAPH, WEIGHT_GRAPH
 
 class Model(Module):
     depth: int
-    name: str
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.name = __class__.__name__
 
     def forward_layer(self, x, depth: int) -> Tuple[Any, Dict[str, torch.Tensor]]:
         raise NotImplementedError()
@@ -38,7 +33,6 @@ class ProjectWrapper(Model):
         super().__init__()
         self.model = model
         self.depth = model.depth
-        self.name = model.name
         self._wrapper = (proj_dims and proj_values) is not None
         if self._wrapper:
             self._input_size = proj_values.size()
