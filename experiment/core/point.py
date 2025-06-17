@@ -34,6 +34,7 @@ class Neural:
             with_grid=False,
             with_legend=False,
         ) as ax:
+            ax.set_aspect(aspect="auto")
             ax.bar(nd_x, nd_y, color=color(1), width=0.15, label=f"All Neurons: {sum(nd_y)}")
             ax.bar(id_x, id_y, color=color(0), width=0.15, label=f"Intersect Neurons: {sum(id_y)}")
             ax.legend(prop={"weight": "normal", "size": 7})

@@ -66,7 +66,7 @@ class Analysis:
 
     def draw(self, experiment_dict: Dict, save_dir: str):
         funs = [
-            self.save_region_epoch_tabel,
+            self.save_region_epoch_table,
             self.draw_region_epoch_plot,
             self.draw_region_acc_plot,
             self.draw_epoch_acc_plot,
@@ -74,7 +74,7 @@ class Analysis:
         for fun in funs:
             fun(experiment_dict, save_dir)
 
-    def save_region_epoch_tabel(self, experiment_dict: Dict[str, Dict[Any, Any]], save_dir: str):
+    def save_region_epoch_table(self, experiment_dict: Dict[str, Dict[Any, Any]], save_dir: str):
         savePath = os.path.join(save_dir, "regionEpoch.csv")
         strBuff = ''
         head = None
