@@ -51,7 +51,7 @@ class _base:
     def _init_dir(self, net: Model):
         self.model_dir = os.path.join(self.root_dir, "model")
         exp_dir = "experiment"
-        if isinstance(net, ProjectWrapper) and net.proj_dim is not None:
+        if isinstance(net, ProjectWrapper) and net.wrapper:
             exp_dir = f"experiment-{net.proj_dim}".replace(" ", "")
         self.experiment_dir = os.path.join(self.root_dir, exp_dir)
         for dir in [
@@ -238,7 +238,7 @@ class CPAs(_cpa):
     def run(self):
         net, dataset, n_classes = self._init_model()
         depth = self.depth if self.depth >= 0 else net.depth
-        val_dataloader = data.DataLoader(dataset, shuffle=True, pin_memory=True)
+        val_dataloader = data.DataLoader(dataset, shuffle=True, pin_memory=True) if dataset is not None else None
         input_size = self.input_size(net, dataset)
         cpa_factory = CPAFactory(device=self.device, workers=self.workers)
         model_list = os.listdir(self.model_dir)
@@ -253,8 +253,7 @@ class CPAs(_cpa):
                 net.load_state_dict(torch.load(os.path.join(self.model_dir, model_name), weights_only=False))
                 net.to(self.device)
                 # Accuracy
-                acc = self.val_net(net, val_dataloader).cpu().numpy()
-                print(f"Accuracy: {acc:.4f}")
+                acc = self._accuracy(net, val_dataloader)
                 # CPA
                 handler = Handler(self.is_draw, self.is_hpas)
                 logger = get_logger(
@@ -296,6 +295,13 @@ class CPAs(_cpa):
                         "accuracy": acc,
                     }
                     torch.save(data_dict, os.path.join(save_dir, "net_regions.pkl"))
+
+    def _accuracy(self, net: Model, dataloader: data.DataLoader):
+        if dataloader is None:
+            return 0
+        acc = self.val_net(net, dataloader).cpu().numpy()
+        print(f"Accuracy: {acc:.4f}")
+        return acc
 
 
 class Points(_cpa):
@@ -398,13 +404,14 @@ class Experiment(_base):
 
     def _info(self):
         net, dataset, n_classes = self._init_model()
+        n_dataset = 0 if dataset is None else len(dataset)
         parameters = sum([param.nelement() for param in net.parameters()])
         result = {
             "Net": {
                 "n_parameters": parameters,
             },
             "data.Dataset": {
-                "n_dataset": len(dataset),
+                "n_dataset": n_dataset,
                 "n_classes": n_classes,
             },
         }

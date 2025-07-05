@@ -3,12 +3,13 @@ from typing import Callable
 
 import numpy as np
 import torch
+from torchvision.models.resnet import ResNet18_Weights
 
-from dataset import Classification, Dataset, GaussianQuantiles, Mnist, Moon, Random, cifar
+from dataset import Classification, Dataset, GaussianQuantiles, Mnist, Moon, Random, cifar, imagenet
 from torchays.cpa import Model, ProjectWrapper
-from torchays.models import CIFARLinearNet, CIFARNet, LeNet, TestNetLinear
+from torchays.models import CIFARLinearNet, CIFARNet, LeNet, TestNetLinear, resnet
 
-from .config import ANALYSIS, CIFAR10, COMMON, EXPERIMENT, GLOBAL, MNIST, PATH, TESTNET, TOY, TRAIN, TYPE, configs
+from .config import ANALYSIS, CIFAR10, COMMON, EXPERIMENT, GLOBAL, IMAGENET, MNIST, PATH, TESTNET, TOY, TRAIN, TYPE, configs
 from .core import Analysis, Experiment, TrainHandler
 
 
@@ -22,7 +23,7 @@ def init_fun(seed: int = 0):
 
 
 def proj_net(
-    new: Callable[[int], Model],
+    new: Callable[[int, bool], Model],
     proj_dims: tuple | None = None,
     proj_values: torch.Tensor = None,
     handler: Callable[[str, torch.Tensor, str], None] = None,
@@ -30,7 +31,7 @@ def proj_net(
     is_proj = (proj_dims and proj_values) is not None
 
     def wrapper(n_classes: int, training: bool = True):
-        net = new(n_classes)
+        net = new(n_classes, training)
         if handler is not None and training:
             net.handler = handler
         if not is_proj or training:
@@ -58,12 +59,14 @@ def dataset():
         return Mnist(root, MNIST.DOWNLOAD)
     if GLOBAL.TYPE == TYPE.CIFAR10:
         return cifar.Cifar10(root, CIFAR10.DOWNLOAD)
+    if GLOBAL.TYPE == TYPE.ImageNet:
+        return imagenet.ImageNet(root, IMAGENET.ROOT)
     return None
 
 
 def net():
 
-    def wrapper(n_classes: int) -> Model:
+    def wrapper(n_classes: int, training: bool = True) -> Model:
         if GLOBAL.TYPE == TYPE.MNIST:
             # LeNet
             return LeNet()
@@ -72,6 +75,11 @@ def net():
             if CIFAR10.LINEAR:
                 return CIFARLinearNet(CIFAR10.NORM_LAYER)
             return CIFARNet(CIFAR10.NORM_LAYER)
+        elif GLOBAL.TYPE == TYPE.ImageNet:
+            weights = None
+            if IMAGENET.PRETRAIN == True:
+                weights = ResNet18_Weights.IMAGENET1K_V1
+            return resnet.resnet18(weights=weights)
         # Toy
         return TestNetLinear(
             in_features=TOY.IN_FEATURES,

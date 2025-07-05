@@ -3,12 +3,12 @@ from typing import Iterable, List, Tuple
 
 import torch
 
-from experiment import ANALYSIS, CIFAR10, COMMON, EXPERIMENT, GLOBAL, PATH, TESTNET, TOY, TRAIN, TYPE, dataset, net, proj_net, run
+from experiment import ANALYSIS, CIFAR10, COMMON, EXPERIMENT, GLOBAL, IMAGENET, PATH, TESTNET, TOY, TRAIN, TYPE, dataset, net, proj_net, run
 from torchays import nn
 
 
 def config():
-    COMMON.GPU_ID = 0
+    COMMON.GPU_ID = 7
 
     TRAIN.TRAIN = True
     TRAIN.MAX_EPOCH = 5000
@@ -149,7 +149,25 @@ def lab4(
 
         EXPERIMENT.PROJ_DIM = proj_dim
         EXPERIMENT.PROJ_VALUES = proj_values
-        EXPERIMENT.DEPTH
+
+    return config_fn
+
+
+def lab5(
+    name: str,
+    proj_dim: Tuple[int] = None,
+    proj_values: torch.Tensor = None,
+):
+    args = (name, TYPE.ImageNet)
+
+    def config_fn():
+        PATH.TAG = "CPAExploration-lab5"
+        set_config(*args)
+        IMAGENET.PRETRAIN = False
+
+        TRAIN.TRAIN = False
+        EXPERIMENT.PROJ_DIM = proj_dim
+        EXPERIMENT.PROJ_VALUES = proj_values
 
     return config_fn
 
@@ -226,7 +244,7 @@ if __name__ == "__main__":
         # ====================================================================
         # Random-feat_4
         # 1. 单层MLP情况下, 随着宽度增加, 区域数量的增长关系;
-        *[lab1(TYPE.Random, [16 * (2**i)], in_features=4) for i in range(0, 2)],
+        *[lab1(TYPE.Random, [16 * (2**i)], in_features=4) for i in range(3, 4)],
         # 2. 多层MLP情况下, 每一层神经元数量固定, 如何影响到区域数量;
         *[lab1(TYPE.Random, [16] * i, in_features=4) for i in range(2, 4)],
         # 3. 多层MLP情况下, 随着某一层的宽度变动, 区域数量的增加关系;
@@ -281,11 +299,17 @@ if __name__ == "__main__":
         lab4("CIFAR10-batch", TYPE.CIFAR10, nn.BatchNorm2d, batch_size=256, proj_dim=(1000, 2000), proj_values=torch.zeros((3, 32, 32)) + 0.5),
     ]
 
+    # lab5: Image-net, resnet-18
+    lab5_conf = [
+        lab5("ImageNet-Proj", **random_proj((3, 224, 224))),
+    ]
+
     configs = [
-        *lab1_conf,
-        *lab2_conf,
-        *lab3_conf,
-        *lab4_conf,
+        # *lab1_conf,
+        # *lab2_conf,
+        # *lab3_conf,
+        # *lab4_conf,
+        *lab5_conf,
     ]
     for lab_config in configs:
         lab_config()

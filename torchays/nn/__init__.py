@@ -1,10 +1,6 @@
 from .modules import (
     AdaptiveAvgPool2d,
     AvgPool2d,
-    Norm1d,
-    Norm2d,
-    Norm3d,
-    NormNone,
     BatchNorm1d,
     BatchNorm2d,
     BatchNorm3d,
@@ -14,8 +10,13 @@ from .modules import (
     Linear,
     MaxPool2d,
     Module,
+    Norm1d,
+    Norm2d,
+    Norm3d,
+    NormNone,
     ReLU,
     Sequential,
+    Tensor,
 )
 
 __all__ = [
@@ -36,4 +37,5 @@ __all__ = [
     "MaxPool2d",
     "AdaptiveAvgPool2d",
     "Flatten",
+    "Tensor",
 ]

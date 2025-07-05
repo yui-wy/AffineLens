@@ -1,4 +1,4 @@
-from typing import Any, Callable, List, Optional, Type, Union
+from typing import Any, Callable, List, Optional, Tuple, Type, Union
 
 import torch
 from torch.nn import init as nninit
@@ -19,7 +19,8 @@ from torchvision.models.resnet import (
 from torchvision.utils import _log_api_usage_once
 
 from .. import nn
-from ..nn.modules import Tensor, set_graph
+from ..cpa import Model
+from ..nn.modules import Tensor
 
 __all__ = [
     "ResNet",
@@ -65,19 +66,31 @@ def conv1x1(in_planes: int, out_planes: int, stride: int = 1) -> nn.Conv2d:
     return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
 
 
-class _Block(nn.Module):
-    def _plus(self, input: Tensor, identity: Tensor):
-        if self.graphing:
-            return set_graph(
-                input + identity,
-                input.weight_graph + identity.weight_graph,
-                input.bias_graph + identity.bias_graph,
-            )
-        return input + identity
+class Sequential(nn.Sequential, Model):
+
+    def __init__(self, *arg, depth: int = -1):
+        super().__init__(*arg)
+        self.depth = depth
+
+    def forward_layer(self, input, depth=0):
+        for module in self:
+            if not isinstance(module, Model):
+                raise Exception("module does not has the \"forward_layer\" function.")
+            input = module.forward_layer(input, depth)
+        return input
+
+
+class _Block(Model):
+    n_relu: int = 0
+
+    def __init__(self, depth: int):
+        super().__init__()
+        self.depth = depth + (self.n_relu - 1)
 
 
 class BasicBlock(_Block):
     expansion: int = 1
+    n_relu: int = 2
 
     def __init__(
         self,
@@ -89,8 +102,9 @@ class BasicBlock(_Block):
         base_width: int = 64,
         dilation: int = 1,
         norm_layer: Optional[Callable[..., nn.Module]] = None,
+        depth: int = -1,
     ) -> None:
-        super().__init__()
+        super().__init__(depth)
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
         if groups != 1 or base_width != 64:
@@ -119,7 +133,31 @@ class BasicBlock(_Block):
         if self.downsample is not None:
             identity = self.downsample(x)
 
-        out = self._plus(out, identity)
+        out += identity
+        out = self.relu(out)
+
+        return out
+
+    def forward_layer(self, x, depth):
+        identity = x
+
+        out = self.conv1(x)
+        out = self.bn1(out)
+        if depth == (self.depth - 1):
+            # print(f"block: n_relu_0, depth_{depth}")
+            return out
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+
+        if self.downsample is not None:
+            identity = self.downsample(x)
+
+        out += identity
+        if depth == self.depth:
+            # print(f"block: n_relu_1, depth_{depth}")
+            return out
         out = self.relu(out)
 
         return out
@@ -133,6 +171,7 @@ class Bottleneck(_Block):
     # https://ngc.nvidia.com/catalog/model-scripts/nvidia:resnet_50_v1_5_for_pytorch.
 
     expansion: int = 4
+    n_relu: int = 3
 
     def __init__(
         self,
@@ -144,8 +183,9 @@ class Bottleneck(_Block):
         base_width: int = 64,
         dilation: int = 1,
         norm_layer: Optional[Callable[..., nn.Module]] = None,
+        depth: int = -1,
     ) -> None:
-        super().__init__()
+        super().__init__(depth)
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
         width = int(planes * (base_width / 64.0)) * groups
@@ -177,13 +217,44 @@ class Bottleneck(_Block):
         if self.downsample is not None:
             identity = self.downsample(x)
 
-        out = self._plus(out, identity)
+        out += identity
+        out = self.relu(out)
+
+        return out
+
+    def forward_layer(self, x, depth):
+        identity = x
+
+        out = self.conv1(x)
+        out = self.bn1(out)
+        if depth == (self.depth - 2):
+            # print(f"block: n_relu_0, depth_{depth}")
+            return out
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+        if depth == (self.depth - 1):
+            # print(f"block: n_relu_1, depth_{depth}")
+            return out
+        out = self.relu(out)
+
+        out = self.conv3(out)
+        out = self.bn3(out)
+
+        if self.downsample is not None:
+            identity = self.downsample(x)
+
+        out += identity
+        if depth == (self.depth):
+            # print(f"block: n_relu_2, depth_{depth}")
+            return out
         out = self.relu(out)
 
         return out
 
 
-class ResNet(nn.Module):
+class ResNet(Model):
     def __init__(
         self,
         block: Type[Union[BasicBlock, Bottleneck]],
@@ -214,11 +285,15 @@ class ResNet(nn.Module):
         self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = norm_layer(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 64, layers[0])
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2, dilate=replace_stride_with_dilation[0])
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2, dilate=replace_stride_with_dilation[1])
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2, dilate=replace_stride_with_dilation[2])
+        # Tips: Maxpool is not supported by CPAExploration.
+        self.avgpool1 = nn.AvgPool2d(kernel_size=3, stride=2, padding=1)
+
+        self.layer1, s_depth = self._make_layer(block, 64, layers[0], s_depth=1)
+        self.layer2, s_depth = self._make_layer(block, 128, layers[1], stride=2, dilate=replace_stride_with_dilation[0], s_depth=s_depth)
+        self.layer3, s_depth = self._make_layer(block, 256, layers[2], stride=2, dilate=replace_stride_with_dilation[1], s_depth=s_depth)
+        self.layer4, s_depth = self._make_layer(block, 512, layers[3], stride=2, dilate=replace_stride_with_dilation[2], s_depth=s_depth)
+        self.depth = s_depth - 1
+
         self.flatten = nn.Flatten(1)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(512 * block.expansion, num_classes)
@@ -247,7 +322,8 @@ class ResNet(nn.Module):
         blocks: int,
         stride: int = 1,
         dilate: bool = False,
-    ) -> nn.Sequential:
+        s_depth: int = 0,
+    ) -> Tuple[Sequential, int]:
         norm_layer = self._norm_layer
         downsample = None
         previous_dilation = self.dilation
@@ -261,7 +337,20 @@ class ResNet(nn.Module):
             )
 
         layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample, self.groups, self.base_width, previous_dilation, norm_layer))
+        layers.append(
+            block(
+                self.inplanes,
+                planes,
+                stride,
+                downsample,
+                self.groups,
+                self.base_width,
+                previous_dilation,
+                norm_layer,
+                depth=s_depth,
+            )
+        )
+        s_depth += block.n_relu
         self.inplanes = planes * block.expansion
         for _ in range(1, blocks):
             layers.append(
@@ -272,17 +361,19 @@ class ResNet(nn.Module):
                     base_width=self.base_width,
                     dilation=self.dilation,
                     norm_layer=norm_layer,
+                    depth=s_depth,
                 )
             )
-
-        return nn.Sequential(*layers)
+            s_depth += block.n_relu
+        seq = Sequential(*layers, depth=s_depth - 1)
+        return seq, s_depth
 
     def _forward_impl(self, x: Tensor) -> Tensor:
         # See note [TorchScript super()]
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
-        x = self.maxpool(x)
+        x = self.avgpool1(x)
 
         x = self.layer1(x)
         x = self.layer2(x)
@@ -297,6 +388,37 @@ class ResNet(nn.Module):
 
     def forward(self, x: Tensor) -> Tensor:
         return self._forward_impl(x)
+
+    def forward_layer(self, x: Tensor, depth=0):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        if depth == 0:
+            # print(f"resnet: n_relu_0, depth_{depth}")
+            return x
+        x = self.relu(x)
+        x = self.avgpool1(x)
+
+        x = self.layer1.forward_layer(x, depth)
+        if depth <= self.layer1.depth:
+            return x
+
+        x = self.layer2.forward_layer(x, depth)
+        if depth <= self.layer2.depth:
+            return x
+
+        x = self.layer3.forward_layer(x, depth)
+        if depth <= self.layer3.depth:
+            return x
+
+        x = self.layer4.forward_layer(x, depth)
+        if depth <= self.layer3.depth:
+            return x
+
+        x = self.avgpool(x)
+        x = self.flatten(x)
+        x = self.fc(x)
+
+        return x
 
 
 def _resnet(

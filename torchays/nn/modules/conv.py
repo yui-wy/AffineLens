@@ -1,11 +1,10 @@
 import torch
 import torch.nn as nn
-from torch import Tensor
 from torch.nn.common_types import _size_2_t
 from torch.nn.modules.utils import _pair
 
 from ..functional import conv2d
-from .base import Module, check_graph, set_graph
+from .base import Module, Tensor, check_graph, set_graph
 
 
 class Conv2d(Module, nn.Conv2d):

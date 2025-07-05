@@ -35,7 +35,7 @@ def extend(*config: _config):
 
 
 def __config() -> Tuple[_config]:
-    configs = [ANALYSIS, CIFAR10, COMMON, EXPERIMENT, GLOBAL, MNIST, PATH, TESTNET, TOY, TRAIN, TYPE]
+    configs = [ANALYSIS, CIFAR10, IMAGENET, COMMON, EXPERIMENT, GLOBAL, MNIST, PATH, TESTNET, TOY, TRAIN, TYPE]
     configs.extend(__extend_config)
     return configs
 
@@ -116,6 +116,8 @@ class TYPE(_config):
     MNIST = "MNIST"
     CIFAR10 = "CIFAR10"
     CIFAR100 = "CIFAR100"
+    ImageNet = "ImageNet"
+    TinyImageNet = "TinyImageNet"
 
 
 class COMMON(_config):
@@ -147,6 +149,11 @@ class CIFAR10(_config):
     DOWNLOAD: bool = True
     LINEAR: bool = False
     NORM_LAYER = nn.BatchNorm2d
+
+
+class IMAGENET(_config):
+    ROOT: bool = "image-net"
+    PRETRAIN: bool = False
 
 
 class TESTNET(_config):

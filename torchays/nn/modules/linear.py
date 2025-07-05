@@ -1,8 +1,7 @@
 import torch
 import torch.nn as nn
-from torch import Tensor
 
-from .base import Module, check_graph, set_graph
+from .base import Module, Tensor, check_graph, set_graph
 
 
 class Linear(Module, nn.Linear):

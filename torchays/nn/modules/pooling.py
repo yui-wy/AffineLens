@@ -3,12 +3,11 @@ from typing import Tuple
 
 import torch
 import torch.nn as nn
-from torch import Tensor
 from torch.nn.common_types import _size_2_t, _size_any_opt_t, _size_any_t
 from torch.nn.modules.utils import _pair
 
 from ..functional import avg_pool_2d, max_pool_2d
-from .base import Module, check_graph, set_graph
+from .base import Module, Tensor, check_graph, set_graph
 
 
 def _get_adaptive_pool_meta(output_side, input_side, padding_side=0):
@@ -87,7 +86,7 @@ class AdaptiveAvgPool2d(Module, nn.AdaptiveAvgPool2d):
         self._output_size = _pair(output_size)
 
     def forward_graph(self, input: Tensor, weight_graph: Tensor = None, bias_graph: Tensor = None) -> Tuple[Tensor, Tensor]:
-        output = nn.AvgPool2d.forward(self, input)
+        output = nn.AdaptiveAvgPool2d.forward(self, input)
 
         input, weight_graph, bias_graph = check_graph(input)
         kernel_size, stride, divisor = self._get_meta(input)

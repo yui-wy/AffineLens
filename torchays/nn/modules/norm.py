@@ -1,11 +1,11 @@
 from typing import Callable, Tuple
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 from torch.nn import init
 from torch.nn.parameter import Parameter
 
-from .base import Module, check_graph, get_size_to_one, set_graph
+from .base import Module, Tensor, check_graph, get_size_to_one, set_graph
 
 
 class _norm(nn.Module):

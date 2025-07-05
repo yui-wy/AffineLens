@@ -2,9 +2,8 @@ from typing import Tuple
 
 import torch
 import torch.nn as nn
-from torch import Tensor
 
-from .base import Module, check_graph, set_graph, get_size_to_one
+from .base import Module, Tensor, check_graph, get_size_to_one, set_graph
 
 
 class ParamReLU(Module):

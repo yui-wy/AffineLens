@@ -1,7 +1,7 @@
 import torch
-from torch import Tensor, nn
+from torch import nn
 
-from .base import Module, check_graph, set_graph
+from .base import Module, Tensor, check_graph, set_graph
 
 
 class Flatten(Module, nn.Flatten):

@@ -3,8 +3,8 @@ from typing import Any, Dict, Tuple
 import torch
 from torch.nn import Parameter
 
-from ..nn import Linear, Module
-from ..nn.modules import BIAS_GRAPH, WEIGHT_GRAPH
+from ..nn import Linear, Module, Tensor
+from ..nn.modules import set_graph
 
 
 class Model(Module):
@@ -33,8 +33,8 @@ class ProjectWrapper(Model):
         super().__init__()
         self.model = model
         self.depth = model.depth
-        self._wrapper = (proj_dims and proj_values) is not None
-        if self._wrapper:
+        self.wrapper = (proj_dims and proj_values) is not None
+        if self.wrapper:
             self._input_size = proj_values.size()
             self.input_size = (len(proj_dims),)
             self.proj_dim = proj_dims
@@ -56,14 +56,13 @@ class ProjectWrapper(Model):
         self.wrapper_layers.bias = Parameter(_bias)
 
     def _forward(self, x):
-        if self._wrapper and self.graphing:
+        if self.wrapper and self.graphing:
             # when finding CPAs
-            x, graph = self.wrapper_layers(x)
-            x: torch.Tensor = x.view(x.size(0), *self._input_size)
-            wg, bg = graph[WEIGHT_GRAPH], graph[BIAS_GRAPH]
-            wg: torch.Tensor = wg.view(x.size(0), *self._input_size, *self.input_size)
-            bg: torch.Tensor = bg.view(x.size(0), *self._input_size)
-            x = (x, {WEIGHT_GRAPH: wg, BIAS_GRAPH: bg})
+            x: Tensor = self.wrapper_layers(x)
+            output = x.view(x.size(0), *self._input_size)
+            weight_graph = x.weight_graph.view(x.size(0), *self._input_size, *self.input_size)
+            bias_graph = x.bias_graph.view(x.size(0), *self._input_size)
+            return set_graph(output, weight_graph, bias_graph)
         return x
 
     def forward(self, x):

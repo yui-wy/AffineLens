@@ -76,7 +76,9 @@ class CPA:
     ):
         assert isinstance(net, Module), "the type of net must be \"BaseModule\"."
         self.net = net.graph().to(device)
-        self.depth = depth if depth >= 0 else net.depth
+        self.depth = net.depth
+        if depth >= 0 and depth <= net.depth:
+            self.depth = depth
         self.cpa_handler = CPAHandler(handler, depth)
         self.device = device
         self.logging = logging
