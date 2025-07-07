@@ -152,7 +152,7 @@ class CIFAR10(_config):
 
 
 class IMAGENET(_config):
-    ROOT: bool = "image-net"
+    ROOT: str = "image-net"
     PRETRAIN: bool = False
 
 
