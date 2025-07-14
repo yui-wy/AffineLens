@@ -61,6 +61,8 @@ def dataset():
         return cifar.Cifar10(root, CIFAR10.DOWNLOAD)
     if GLOBAL.TYPE == TYPE.ImageNet:
         return imagenet.ImageNet(root, IMAGENET.ROOT)
+    if GLOBAL.TYPE == TYPE.TinyImageNet:
+        return imagenet.TinyImageNet(root, IMAGENET.ROOT)
     return None
 
 
@@ -79,7 +81,14 @@ def net():
             weights = None
             if IMAGENET.PRETRAIN == True:
                 weights = ResNet18_Weights.IMAGENET1K_V1
-            return resnet.resnet18(weights=weights)
+            return resnet.resnet18(
+                weights=weights,
+                num_classes=n_classes,
+            )
+        elif GLOBAL.TYPE == TYPE.TinyImageNet:
+            return resnet.resnet18(
+                num_classes=n_classes,
+            )
         # Toy
         return TestNetLinear(
             in_features=TOY.IN_FEATURES,

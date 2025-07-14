@@ -70,14 +70,17 @@ def print_cfg():
     print("Configuration:")
     print(f"Name: {GLOBAL.NAME}")
     print(f"Random Seed: {COMMON.SEED}")
-    print(f"Dataset: {GLOBAL.TYPE}")
     print(f"GPU_ID: {COMMON.GPU_ID}")
+    print(f"Dataset: {GLOBAL.TYPE}")
     if GLOBAL.TYPE == TYPE.MNIST:
         print(f"Net: LeNet")
     elif GLOBAL.TYPE == TYPE.CIFAR10:
         print(f"Net: CIFARNet")
         print(f"|   Linear Model: {CIFAR10.LINEAR}")
         print(f"|   NormLayer: {CIFAR10.NORM_LAYER.__name__}")
+    elif GLOBAL.TYPE == TYPE.ImageNet or GLOBAL.TYPE == TYPE.TinyImageNet:
+        print(f"|   data_root: {IMAGENET.ROOT}")
+        print(f"Net: Resnet18")
     else:
         print(f"|   n_samples: {TOY.N_SAMPLES}")
         print(f"|   n_class: {TOY.N_CLASSES}")
