@@ -439,8 +439,20 @@ def _resnet(
     return model
 
 
+def resnet1(*, weights: Optional[ResNet18_Weights] = None, progress: bool = True, **kwargs: Any) -> ResNet:
+    """两层，每层1个 BasicBlock 的 ResNet"""
+    # specify 2 stages with 1 block each, pad to 4 so ResNet ctor won't IndexError
+    weights = ResNet18_Weights.verify(weights)
+    return _resnet(BasicBlock, [1, 0, 0, 0], weights, progress, **kwargs)
+
+
+def resnet9(*, weights: Optional[ResNet18_Weights] = None, progress: bool = True, **kwargs: Any) -> ResNet:
+    weights = ResNet18_Weights.verify(weights)
+    return _resnet(BasicBlock, [1, 1, 1, 1], weights, progress, **kwargs)
+
+
 @handle_legacy_interface(weights=("pretrained", ResNet18_Weights.IMAGENET1K_V1))
-def resnet18(*, weights: Optional[ResNet18_Weights] = None, progress: bool = True, **kwargs: Any) -> ResNet:
+def resnet18(*, weights: Optional[ResNet34_Weights] = None, progress: bool = True, **kwargs: Any) -> ResNet:
     """ResNet-18 from `Deep Residual Learning for Image Recognition <https://arxiv.org/pdf/1512.03385.pdf>`__.
 
     Args:

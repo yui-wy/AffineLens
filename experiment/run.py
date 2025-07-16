@@ -81,14 +81,10 @@ def net():
             weights = None
             if IMAGENET.PRETRAIN == True:
                 weights = ResNet18_Weights.IMAGENET1K_V1
-            return resnet.resnet18(
-                weights=weights,
-                num_classes=n_classes,
-            )
+            return resnet.resnet18(weights=weights, num_classes=n_classes)
         elif GLOBAL.TYPE == TYPE.TinyImageNet:
-            return resnet.resnet18(
-                num_classes=n_classes,
-            )
+            model = resnet.resnet18 if IMAGENET.RESNET is None else resnet.resnet18
+            return model(num_classes=n_classes)
         # Toy
         return TestNetLinear(
             in_features=TOY.IN_FEATURES,

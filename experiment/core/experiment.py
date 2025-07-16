@@ -136,7 +136,7 @@ class Train(_base):
                     net.train()
                 if self.train_handler is not None:
                     self.train_handler.step_handler(net, epoch, j, total_step, loss, acc)
-                # print(f"Epoch: {epoch+1} / {self.max_epoch}, Step: {j} / {total_step}, Loss: {loss:.4f}, Acc: {acc:.4f}")
+                print(f"Epoch: {epoch+1} / {self.max_epoch}, Step: {j} / {total_step}, Loss: {loss:.4f}, Acc: {acc:.4f}")
             net.eval()
             if (epoch + 1) in self.save_epoch:
                 print(f"Save net: net_{epoch+1}.pth")

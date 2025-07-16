@@ -1,10 +1,11 @@
 import json
 import os
-from typing import Any, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 
 import torch
 
 from torchays import nn
+from torchays.models import resnet
 
 
 class _config:
@@ -12,9 +13,7 @@ class _config:
     def __attr__(clz) -> Dict[str, Any]:
         attr: Dict[str, Any] = dict()
         for k, v in clz.__dict__.items():
-            if k.startswith("_"):
-                continue
-            if isinstance(v, torch.Tensor):
+            if k.startswith("_") or isinstance(v, torch.Tensor) or isinstance(v, Callable):
                 continue
             if isinstance(v, type):
                 v = v.__name__
@@ -80,7 +79,10 @@ def print_cfg():
         print(f"|   NormLayer: {CIFAR10.NORM_LAYER.__name__}")
     elif GLOBAL.TYPE == TYPE.ImageNet or GLOBAL.TYPE == TYPE.TinyImageNet:
         print(f"|   data_root: {IMAGENET.ROOT}")
-        print(f"Net: Resnet18")
+        if IMAGENET.RESNET is None:
+            print(print(f"Net: resnet18"))
+        else:
+            print(f"Net: {IMAGENET.RESNET.__name__}")
     else:
         print(f"|   n_samples: {TOY.N_SAMPLES}")
         print(f"|   n_class: {TOY.N_CLASSES}")
@@ -157,6 +159,7 @@ class CIFAR10(_config):
 class IMAGENET(_config):
     ROOT: str = "image-net"
     PRETRAIN: bool = False
+    RESNET: Callable[..., resnet.ResNet] = None
 
 
 class TESTNET(_config):

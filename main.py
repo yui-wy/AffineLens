@@ -1,10 +1,11 @@
 import random
-from typing import Iterable, List, Tuple
+from typing import Callable, Iterable, List, Tuple
 
 import torch
 
 from experiment import ANALYSIS, CIFAR10, COMMON, EXPERIMENT, GLOBAL, IMAGENET, PATH, TESTNET, TOY, TRAIN, TYPE, dataset, net, proj_net, run
 from torchays import nn
+from torchays.models import resnet
 
 
 def config():
@@ -155,17 +156,24 @@ def lab4(
 
 def lab5(
     name: str,
+    batch_size: int = 64,
+    resnet: Callable[..., resnet.ResNet] = None,
     proj_dim: Tuple[int] = None,
     proj_values: torch.Tensor = None,
 ):
-    args = (name, TYPE.ImageNet)
+    args = (name, TYPE.TinyImageNet)
+    kwargs = {"batch_size": batch_size}
 
     def config_fn():
         PATH.TAG = "CPAExploration-lab5"
-        set_config(*args)
-        IMAGENET.PRETRAIN = False
+        set_config(*args, **kwargs)
+        TRAIN.MAX_EPOCH = 30
+        TRAIN.SAVE_EPOCH = [1, 5, 10, 15, 20, 25, 30]
 
-        TRAIN.TRAIN = False
+        IMAGENET.ROOT = "../../dataset/tiny-imagenet-200"
+        IMAGENET.PRETRAIN = False
+        IMAGENET.RESNET = resnet
+
         EXPERIMENT.PROJ_DIM = proj_dim
         EXPERIMENT.PROJ_VALUES = proj_values
 
@@ -301,7 +309,7 @@ if __name__ == "__main__":
 
     # lab5: Image-net, resnet-18
     lab5_conf = [
-        lab5("ImageNet-Proj", **random_proj((3, 224, 224))),
+        lab5("ImageNet-Proj", batch_size=256, resnet=resnet.resnet9, **random_proj((3, 224, 224))),
     ]
 
     configs = [
