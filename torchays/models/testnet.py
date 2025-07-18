@@ -1,9 +1,8 @@
-from typing import Callable, List
+from typing import List
 
 import torch
 
 from .. import nn
-from ..nn.modules import Tensor, set_graph
 
 
 class TestNetLinear(nn.Module):
@@ -13,10 +12,8 @@ class TestNetLinear(nn.Module):
         layers: tuple = [32, 32, 32],
         n_classes=2,
         norm_layer=nn.BatchNorm1d,
-        handler: Callable[[str, torch.Tensor, str], None] = None,
     ):
         super(TestNetLinear, self).__init__()
-        self.handler = handler
         self.n_layers = len(layers)
         self.depth = self.n_layers - 1
         self.relu = nn.ReLU()
@@ -28,21 +25,15 @@ class TestNetLinear(nn.Module):
             self.add_module(f"{i+1}_norm", self._norm_layer(layers[i + 1]))
         self.add_module(f"{self.n_layers}", nn.Linear(layers[-1], n_classes, bias=True))
 
-    def _handler(self, k: str, v: torch.Tensor, description: str = ""):
-        if self.handler is None or self.training:
-            return
-        self.handler(k, v, description)
-
     def forward(self, x):
         x = self._modules['0'](x)
         x = self._modules["0_norm"](x)
-        self._handler("0_norm", x, "")
         x = self.relu(x)
         for i in range(1, self.n_layers):
             x = self._modules[f'{i}'](x)
             x = self._modules[f"{i}_norm"](x)
-            self._handler(f"{i}_norm", x, "")
             x = self.relu(x)
+
         x = self._modules[f"{self.n_layers}"](x)
         return x
 
@@ -59,32 +50,12 @@ class TestNetLinear(nn.Module):
             if depth == i:
                 return x
             x = self.relu(x)
+
         x = self._modules[f"{self.n_layers}"](x)
         return x
 
-    def _change_norm(self, _norm: nn.BatchNorm1d | nn.Norm1d):
-        norm_dict = {}
-        for k, v in self._modules.items():
-            if "_norm" not in k:
-                continue
-            v: nn.BatchNorm1d | nn.Norm1d
-            norm = _norm(v.num_features)
-            norm_dict[k] = norm
-        self._modules.update(norm_dict)
-
-    def load_state_dict(self, state_dict, strict=True, assign=False):
-
-        try:
-            self._change_norm(nn.BatchNorm1d)
-            return super().load_state_dict(state_dict, strict, assign)
-        except Exception as _:
-            self._change_norm(nn.Norm1d)
-            return super().load_state_dict(state_dict, strict, assign)
-
 
 class TestResNet(nn.Module):
-    """Not cnn, use linear."""
-
     def __init__(
         self,
         in_features: int,
@@ -92,10 +63,10 @@ class TestResNet(nn.Module):
         first_features: int = 32,
         n_classes: int = 2,
         norm_layer=nn.BatchNorm1d,
-        is_no_res: bool = False,
+        with_residual: bool = True,
     ):
         super(TestResNet, self).__init__()
-        self._is_no_res = is_no_res
+        self._with_residual = with_residual
         self.n_layers = len(layers)
         self.depth = (self.n_layers - 1) * 2
         self.relu = nn.ReLU()
@@ -107,7 +78,7 @@ class TestResNet(nn.Module):
         self._make_layers(first_features, layers)
 
     def _make_layers(self, first_features: int, layers: List[int]):
-        self.linear_res = nn.Linear(first_features, layers[0])
+        self.linear_residual = nn.Linear(first_features, layers[0])
         for i in range(self.n_layers - 1):
             self.add_module(f"linear_{i}_1", nn.Linear(layers[i], layers[i], bias=True))
             self.add_module(f"norm_{i}_1", self._norm_layer(layers[i]))
@@ -122,28 +93,24 @@ class TestResNet(nn.Module):
         out = self.linear1(x)
         out = self.norm1(out)
         out = self.relu(out)
-        out = self.linear_res(out)
-        # ================================
-        # res
+        out = self.linear_residual(out)
+        # Residual
         for i in range(self.n_layers - 1):
-            out1 = self._modules[f"linear_{i}_1"](out)
-            out1 = self._modules[f"norm_{i}_1"](out1)
-            out1 = self.relu(out1)
-            out1 = self._modules[f"linear_{i}_2"](out1)
-            out1 = self._modules[f"norm_{i}_2"](out1)
-            if self._is_no_res:
-                out = out1
-            else:
-                # downsample
+            identity = out
+            out = self._modules[f"linear_{i}_1"](out)
+            out = self._modules[f"norm_{i}_1"](out)
+            out = self.relu(out)
+            out = self._modules[f"linear_{i}_2"](out)
+            out = self._modules[f"norm_{i}_2"](out)
+            if self._with_residual:
                 if self._modules.get(f"linear_{i}_d") != None and self._modules.get(f"norm_{i}_d") != None:
+                    # downsample
                     out = self._modules[f"linear_{i}_d"](out)
                     out = self._modules[f"norm_{i}_d"](out)
-
-                out = self._forward_plus(out1, out)
+                out += identity
             out = self.relu(out)
-        # ================================
-        out = self.last_linear(out)
 
+        out = self.last_linear(out)
         return out
 
     def forward_layer(self, x: torch.Tensor, depth=-1):
@@ -153,41 +120,27 @@ class TestResNet(nn.Module):
         if depth == 0:
             return out
         out = self.relu(out)
-        out = self.linear_res(out)
-        # ================================
-        # res
+        out = self.linear_residual(out)
+        # Residual
         for i in range(self.n_layers - 1):
-            out1 = self._modules[f"linear_{i}_1"](out)
-            out1 = self._modules[f"norm_{i}_1"](out1)
-            # relu
+            identity = out
+            out = self._modules[f"linear_{i}_1"](out)
+            out = self._modules[f"norm_{i}_1"](out)
             if depth == (i * 2 + 1):
-                return out1
-            out1 = self.relu(out1)
-            out1 = self._modules[f"linear_{i}_2"](out1)
-            out1 = self._modules[f"norm_{i}_2"](out1)
-            if self._is_no_res:
-                out = out1
-            else:
-                # downsample
+                return out
+            out = self.relu(out)
+
+            out = self._modules[f"linear_{i}_2"](out)
+            out = self._modules[f"norm_{i}_2"](out)
+            if self._with_residual:
                 if self._modules.get(f"linear_{i}_d") != None and self._modules.get(f"norm_{i}_d") != None:
+                    # downsample
                     out = self._modules[f"linear_{i}_d"](out)
                     out = self._modules[f"norm_{i}_d"](out)
-
-                out = self._forward_plus(out1, out)
-            # relu
+                out += identity
             if depth == (i * 2 + 2):
                 return out
             out = self.relu(out)
-        # ================================
+
         out = self.last_linear(out)
-
         return out
-
-    def _forward_plus(self, input: Tensor, identity: Tensor):
-        if self.graphing:
-            return set_graph(
-                input + identity,
-                input.weight_graph + identity.weight_graph,
-                input.bias_graph + identity.bias_graph,
-            )
-        return input + identity

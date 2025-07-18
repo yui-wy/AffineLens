@@ -78,7 +78,7 @@ def print_cfg():
         print(f"|   Linear Model: {CIFAR10.LINEAR}")
         print(f"|   NormLayer: {CIFAR10.NORM_LAYER.__name__}")
     elif GLOBAL.TYPE == TYPE.ImageNet or GLOBAL.TYPE == TYPE.TinyImageNet:
-        print(f"|   data_root: {IMAGENET.ROOT}")
+        print(f"|   Data root: {IMAGENET.ROOT}")
         if IMAGENET.RESNET is None:
             print(print(f"Net: resnet18"))
         else:
@@ -87,7 +87,11 @@ def print_cfg():
         print(f"|   n_samples: {TOY.N_SAMPLES}")
         print(f"|   n_class: {TOY.N_CLASSES}")
         print(f"|   in_feature: {TOY.IN_FEATURES}")
-        print(f"Net: TestNetLinear")
+        if TESTNET.WITH_RESNET:
+            print(f"Net: TestResNet")
+            print(f"|   WITH_RESIDUAL: {TESTNET.WITH_RESIDUAL}")
+        else:
+            print(f"Net: TestNetLinear")
         print(f"|   Layers: {TESTNET.N_LAYERS}")
         print(f"|   NormLayer: {TESTNET.NORM_LAYER.__name__}")
     print(f"Action:")
@@ -163,8 +167,10 @@ class IMAGENET(_config):
 
 
 class TESTNET(_config):
-    N_LAYERS = [64] * 3
+    N_LAYERS: List[int] = [64] * 3
     NORM_LAYER = nn.BatchNorm1d
+    WITH_RESNET: bool = False
+    WITH_RESIDUAL: bool = True
 
 
 class GLOBAL(_config):

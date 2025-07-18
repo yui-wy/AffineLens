@@ -70,6 +70,30 @@ def lab1(
     return config_fn
 
 
+def lab1_residual(
+    type: str,
+    n_layers: List[int],
+    norm_layer=nn.Norm1d,
+    in_features: int = 2,
+    n_classes: int = 2,
+    with_residual: bool = True,
+):
+    lab1_fn = lab1(type, n_layers, norm_layer, in_features, n_classes)
+    name = f"ResNetLinear-{with_residual}-{n_layers}".replace(" ", "")
+    if in_features > 2:
+        name += f"-feat_{in_features}"
+    args = (name, type)
+    kwargs = {}
+
+    def config_fn():
+        lab1_fn()
+        set_config(*args, **kwargs)
+        TESTNET.WITH_RESNET = True
+        TESTNET.WITH_RESIDUAL = with_residual
+
+    return config_fn
+
+
 def lab2(
     name: str,
     type: str,
@@ -215,8 +239,8 @@ def main():
 if __name__ == "__main__":
     # lab1：深度和神经元和输入维度，如何影响到区域数量的. ReLU激活函数, 不考虑BN.
     # 验证：区域数量与深度和宽度的关系。
+    # ====================================================================
     lab1_conf = [
-        # ====================================================================
         # Moon
         # 1. 单层MLP情况下, 随着宽度增加, 区域数量的增长关系; (宽度于区域数量的关系)
         *[lab1(TYPE.Moon, [16 * (2**i)]) for i in range(0, 6)],
@@ -259,6 +283,12 @@ if __name__ == "__main__":
         *[lab1(TYPE.Random, [16, 16 * (2**i)], in_features=4) for i in range(1, 4)],
         *[lab1(TYPE.Random, [16 * (2**i), 16], in_features=4) for i in range(1, 4)],
         # ====================================================================
+    ]
+
+    # lab1_residual
+    lab1_residual_conf = [
+        lab1_residual(TYPE.Moon, [16, 16, 16], nn.Norm1d, with_residual=True),
+        lab1_residual(TYPE.Moon, [16, 16, 16], nn.Norm1d, with_residual=False),
     ]
 
     # lab2：层级中, 线性区域中穿越的超平面数量的分析;
@@ -314,10 +344,11 @@ if __name__ == "__main__":
 
     configs = [
         # *lab1_conf,
+        *lab1_residual_conf,
         # *lab2_conf,
         # *lab3_conf,
         # *lab4_conf,
-        *lab5_conf,
+        # *lab5_conf,
     ]
     for lab_config in configs:
         lab_config()

@@ -7,7 +7,7 @@ from torchvision.models.resnet import ResNet18_Weights
 
 from dataset import Classification, Dataset, GaussianQuantiles, Mnist, Moon, Random, cifar, imagenet
 from torchays.cpa import Model, ProjectWrapper
-from torchays.models import CIFARLinearNet, CIFARNet, LeNet, TestNetLinear, resnet
+from torchays.models import CIFARLinearNet, CIFARNet, LeNet, TestNetLinear, TestResNet, resnet
 
 from .config import ANALYSIS, CIFAR10, COMMON, EXPERIMENT, GLOBAL, IMAGENET, MNIST, PATH, TESTNET, TOY, TRAIN, TYPE, configs
 from .core import Analysis, Experiment, TrainHandler
@@ -86,6 +86,14 @@ def net():
             model = resnet.resnet18 if IMAGENET.RESNET is None else resnet.resnet18
             return model(num_classes=n_classes)
         # Toy
+        if TESTNET.WITH_RESNET:
+            return TestResNet(
+                in_features=TOY.IN_FEATURES,
+                layers=TESTNET.N_LAYERS,
+                n_classes=n_classes,
+                norm_layer=TESTNET.NORM_LAYER,
+                with_residual=TESTNET.WITH_RESIDUAL,
+            )
         return TestNetLinear(
             in_features=TOY.IN_FEATURES,
             layers=TESTNET.N_LAYERS,
