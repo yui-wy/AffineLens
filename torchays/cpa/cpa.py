@@ -281,6 +281,8 @@ class CPA:
     def _scale_functions(self, functions: torch.Tensor) -> torch.Tensor:
         def _scale_function(function: torch.Tensor):
             v, _ = function.abs().max(dim=0)
+            if v == 0:
+                return function
             while v < 1:
                 function *= 10
                 v *= 10
