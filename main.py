@@ -9,7 +9,7 @@ from torchays.models import resnet
 
 
 def config():
-    COMMON.GPU_ID = 7
+    COMMON.GPU_ID = 6
 
     TRAIN.TRAIN = True
     TRAIN.MAX_EPOCH = 5000
@@ -191,6 +191,7 @@ def lab5(
     def config_fn():
         PATH.TAG = "CPAExploration-lab5"
         set_config(*args, **kwargs)
+
         TRAIN.MAX_EPOCH = 30
         TRAIN.SAVE_EPOCH = [1, 5, 10, 15, 20, 25, 30]
 
@@ -198,8 +199,10 @@ def lab5(
         IMAGENET.PRETRAIN = False
         IMAGENET.RESNET = resnet
 
+        EXPERIMENT.WORKERS = 1
         EXPERIMENT.PROJ_DIM = proj_dim
         EXPERIMENT.PROJ_VALUES = proj_values
+        EXPERIMENT.BOUND = (-1, 1)
 
     return config_fn
 
@@ -287,8 +290,10 @@ if __name__ == "__main__":
 
     # lab1_residual
     lab1_residual_conf = [
-        lab1_residual(TYPE.Moon, [16, 16, 16], nn.Norm1d, with_residual=True),
-        lab1_residual(TYPE.Moon, [16, 16, 16], nn.Norm1d, with_residual=False),
+        lab1_residual(TYPE.Moon, [32, 32, 32], nn.Norm1d, with_residual=True),
+        lab1_residual(TYPE.Moon, [32, 32, 32], nn.Norm1d, with_residual=False),
+        lab1_residual(TYPE.Moon, [32, 32, 32, 32, 32], nn.Norm1d, with_residual=True),
+        lab1_residual(TYPE.Moon, [32, 32, 32, 32, 32], nn.Norm1d, with_residual=False),
     ]
 
     # lab2：层级中, 线性区域中穿越的超平面数量的分析;
