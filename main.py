@@ -1,3 +1,4 @@
+import multiprocessing
 import random
 from typing import Callable, Iterable, List, Tuple
 
@@ -9,7 +10,7 @@ from torchays.models import resnet
 
 
 def config():
-    COMMON.GPU_ID = 6
+    COMMON.GPU_ID = 7
 
     TRAIN.TRAIN = True
     TRAIN.MAX_EPOCH = 5000
@@ -199,7 +200,7 @@ def lab5(
         IMAGENET.PRETRAIN = False
         IMAGENET.RESNET = resnet
 
-        EXPERIMENT.WORKERS = 1
+        EXPERIMENT.WORKERS = 64
         EXPERIMENT.PROJ_DIM = proj_dim
         EXPERIMENT.PROJ_VALUES = proj_values
         EXPERIMENT.BOUND = (-1, 1)
@@ -240,6 +241,8 @@ def main():
 
 
 if __name__ == "__main__":
+    multiprocessing.set_start_method("spawn")
+
     # lab1：深度和神经元和输入维度，如何影响到区域数量的. ReLU激活函数, 不考虑BN.
     # 验证：区域数量与深度和宽度的关系。
     # ====================================================================
@@ -344,16 +347,16 @@ if __name__ == "__main__":
 
     # lab5: Image-net, resnet-18
     lab5_conf = [
-        lab5("ImageNet-Proj", batch_size=256, resnet=resnet.resnet9, **random_proj((3, 224, 224))),
+        lab5("ImageNet-Proj-resnet18", batch_size=256, resnet=resnet.resnet18, **random_proj((3, 224, 224))),
     ]
 
     configs = [
         # *lab1_conf,
-        *lab1_residual_conf,
+        # *lab1_residual_conf,
         # *lab2_conf,
         # *lab3_conf,
         # *lab4_conf,
-        # *lab5_conf,
+        *lab5_conf,
     ]
     for lab_config in configs:
         lab_config()

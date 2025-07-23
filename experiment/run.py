@@ -83,7 +83,7 @@ def net():
                 weights = ResNet18_Weights.IMAGENET1K_V1
             return resnet.resnet18(weights=weights, num_classes=n_classes)
         elif GLOBAL.TYPE == TYPE.TinyImageNet:
-            model = resnet.resnet18 if IMAGENET.RESNET is None else resnet.resnet18
+            model = resnet.resnet18 if IMAGENET.RESNET is None else IMAGENET.RESNET
             return model(num_classes=n_classes)
         # Toy
         if TESTNET.WITH_RESNET:

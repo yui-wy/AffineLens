@@ -257,8 +257,9 @@ class CPAs(_cpa):
                 # CPA
                 handler = Handler(self.is_draw, self.is_hpas)
                 logger = get_logger(
-                    f"{randint(-100,100)}-region_{os.path.splitext(model_name)[0]}",
-                    os.path.join(save_dir, "region.log"),
+                    title=f"{randint(-100,100)}-region_{os.path.splitext(model_name)[0]}",
+                    path=os.path.join(save_dir, "region.log"),
+                    # path=None,
                     multi=self.multi,
                 )
                 cpa = cpa_factory.CPA(net=net, depth=depth, handler=handler, logger=logger)

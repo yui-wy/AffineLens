@@ -12,7 +12,6 @@ import torch
 from torchays.nn.modules.base import Tensor
 
 from ..nn import Module
-from ..nn.modules import BIAS_GRAPH, WEIGHT_GRAPH
 from ..utils import get_logger
 from .handler import BaseHandler
 from .model import Model
@@ -99,11 +98,23 @@ class CPA:
         input_size: tuple = (2,),
         bounds: float | int | Tuple[float, float] | Tuple[Tuple[float, float]] = 1.0,
     ) -> int | Tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None:
+        self._check_multiprocessing_method()
         if input_size is None and point is None:
             raise ValueError("input_size and point can not be None at the same time.")
         if point is None:
             return self._start(bounds=bounds, input_size=input_size)
         return self._start_point(point, bounds=bounds)
+
+    def _check_spawn(self) -> bool:
+        method = mp.get_start_method()
+        if method == "spawn":
+            return True
+        return False
+
+    def _check_multiprocessing_method(self):
+        if self.workers == 1 or self._check_spawn():
+            return
+        self.logger.warning(f"The start method of multi-processing is not \"spawn ({mp.get_start_method()})\", which will cause some problems when performing certain operations in Pytorch.")
 
     def _start_point(
         self,
@@ -181,14 +192,21 @@ class CPA:
     def _get_counts(self, cpa_set: CPASet) -> int:
         if self.workers == 1:
             return self._single_get_counts(cpa_set)
+
         # Multi-process
+        # When the start method of multiprocessing is the "fork",
         # Change the ForkingPickler, and stop share memory of torch.Tensor when using multiprocessiong.
         # If share_memory is used, the large number of the fd will be created and lead to OOM.
-        _save_reducers = ForkingPickler._extra_reducers
-        ForkingPickler._extra_reducers = {}
+        _save_reducers = {}
+        if not self._check_spawn():
+            _save_reducers = ForkingPickler._extra_reducers
+            ForkingPickler._extra_reducers = {}
+
         self.pool = mp.Pool(processes=self.workers)
         counts = self._multiprocess_get_counts(cpa_set)
-        ForkingPickler._extra_reducers = _save_reducers
+
+        if not self._check_spawn():
+            ForkingPickler._extra_reducers = _save_reducers
         return counts
 
     def _single_get_counts(self, cpa_set: CPASet) -> int:
@@ -206,6 +224,7 @@ class CPA:
 
     def _work(self, cpa: CPAFunc, c_funcs: torch.Tensor, factory: CPACacheFactory):
         self.logger.info(f"Start to get regions. Depth: {cpa.depth+1}, Process-PID: {os.getpid()}. ")
+        print(f"Start to get regions. Depth: {cpa.depth+1}, Process-PID: {os.getpid()}. ")
         return self._handler_region(cpa, c_funcs, factory)
 
     def _multiprocess_get_counts(self, cpa_set: CPASet) -> int:
