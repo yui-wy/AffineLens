@@ -302,7 +302,7 @@ class ResNet(Model):
         self.depth = s_depth - 1
 
         self.flatten = nn.Flatten(1)
-        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.avgpool = nn.AvgPool2d(kernel_size=7, stride=1)
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
         for m in self.modules():
