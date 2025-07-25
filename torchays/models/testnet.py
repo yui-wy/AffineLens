@@ -2,6 +2,8 @@ from typing import List
 
 import torch
 
+from torchays.nn.modules.base import add
+
 from .. import nn
 
 
@@ -107,7 +109,7 @@ class TestResNet(nn.Module):
                     # downsample
                     out = self._modules[f"linear_{i}_d"](out)
                     out = self._modules[f"norm_{i}_d"](out)
-                out += identity
+                out = self._add(out, identity)
             out = self.relu(out)
 
         out = self.last_linear(out)
@@ -137,10 +139,15 @@ class TestResNet(nn.Module):
                     # downsample
                     out = self._modules[f"linear_{i}_d"](out)
                     out = self._modules[f"norm_{i}_d"](out)
-                out += identity
+                out = self._add(out, identity)
             if depth == (i * 2 + 2):
                 return out
             out = self.relu(out)
 
         out = self.last_linear(out)
         return out
+
+    def _add(self, a, b):
+        if self.graphing:
+            return add(a, b)
+        return a + b

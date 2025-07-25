@@ -9,12 +9,12 @@ class Tensor(torch.Tensor):
     weight_graph: torch.Tensor = None
     bias_graph: torch.Tensor = None
 
-    def __add__(self, other):
-        new = super().__add__(other)
-        if isinstance(other, Tensor):
-            new.weight_graph = other.weight_graph + self.weight_graph
-            new.bias_graph = other.bias_graph + self.bias_graph
-        return new
+
+def add(a: Tensor, b: Tensor):
+    new = a + b
+    wg = a.weight_graph + b.weight_graph
+    bg = a.bias_graph + b.bias_graph
+    return set_graph(new, wg, bg)
 
 
 def get_size_to_one(size: torch.Size):

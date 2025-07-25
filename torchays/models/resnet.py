@@ -18,6 +18,8 @@ from torchvision.models.resnet import (
 )
 from torchvision.utils import _log_api_usage_once
 
+from torchays.nn.modules.base import add
+
 from .. import nn
 from ..cpa import Model
 from ..nn.modules import Tensor
@@ -87,6 +89,11 @@ class _Block(Model):
         super().__init__()
         self.depth = depth + (self.n_relu - 1)
 
+    def _add(self, a, b):
+        if self.graphing:
+            return add(a, b)
+        return a + b
+
 
 class BasicBlock(_Block):
     expansion: int = 1
@@ -133,7 +140,7 @@ class BasicBlock(_Block):
         if self.downsample is not None:
             identity = self.downsample(x)
 
-        out += identity
+        out = self._add(out, identity)
         out = self.relu(out)
 
         return out
@@ -154,7 +161,7 @@ class BasicBlock(_Block):
         if self.downsample is not None:
             identity = self.downsample(x)
 
-        out += identity
+        out = self._add(out, identity)
         if depth == self.depth:
             # print(f"block: n_relu_1, depth_{depth}")
             return out
@@ -217,7 +224,7 @@ class Bottleneck(_Block):
         if self.downsample is not None:
             identity = self.downsample(x)
 
-        out += identity
+        out = self._add(out, identity)
         out = self.relu(out)
 
         return out
@@ -245,7 +252,7 @@ class Bottleneck(_Block):
         if self.downsample is not None:
             identity = self.downsample(x)
 
-        out += identity
+        out = self._add(out, identity)
         if depth == (self.depth):
             # print(f"block: n_relu_2, depth_{depth}")
             return out
@@ -285,7 +292,7 @@ class ResNet(Model):
         self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = norm_layer(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
-        # Tips: Maxpool is not supported by CPAExploration.
+        # Tips: Maxpool is not supported by this method.
         self.avgpool1 = nn.AvgPool2d(kernel_size=3, stride=2, padding=1)
 
         self.layer1, s_depth = self._make_layer(block, 64, layers[0], s_depth=1)
