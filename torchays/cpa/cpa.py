@@ -78,7 +78,7 @@ class CPA:
         self.depth = net.depth
         if depth >= 0 and depth <= net.depth:
             self.depth = depth
-        self.cpa_handler = CPAHandler(handler, depth)
+        self.cpa_handler = CPAHandler(handler, self.depth)
         self.device = device
         self.logging = logging
         self.logger = logger
