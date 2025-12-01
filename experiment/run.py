@@ -26,14 +26,11 @@ def proj_net(
     new: Callable[[int, bool], Model],
     proj_dims: tuple | None = None,
     proj_values: torch.Tensor = None,
-    handler: Callable[[str, torch.Tensor, str], None] = None,
 ):
     is_proj = (proj_dims and proj_values) is not None
 
     def wrapper(n_classes: int, training: bool = True):
         net = new(n_classes, training)
-        if handler is not None and training:
-            net.handler = handler
         if not is_proj or training:
             return net
         return ProjectWrapper(
