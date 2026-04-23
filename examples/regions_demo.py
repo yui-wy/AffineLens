@@ -68,6 +68,7 @@ class Handler(BaseHandler):
 
 if __name__ == "__main__":
     handler = Handler()
+    handler.with_region = True
     net = TestNet((2,)).to(device)
     cf = CPAFactory(device=device)
     cpa = cf.CPA(net, handler=handler)
