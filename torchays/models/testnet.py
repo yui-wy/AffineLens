@@ -86,7 +86,7 @@ class TestResNet(nn.Module):
             self.add_module(f"norm_{i}_1", self._norm_layer(layers[i]))
             self.add_module(f"linear_{i}_2", nn.Linear(layers[i], layers[i + 1], bias=True))
             self.add_module(f"norm_{i}_2", self._norm_layer(layers[i + 1]))
-            # downsample
+            # Create a feature projection when consecutive widths differ.
             if layers[i] != layers[i + 1]:
                 self.add_module(f"linear_{i}_d", nn.Linear(layers[i], layers[i + 1], bias=True))
                 self.add_module(f"norm_{i}_d", self._norm_layer(layers[i + 1]))
@@ -96,7 +96,7 @@ class TestResNet(nn.Module):
         out = self.norm1(out)
         out = self.relu(out)
         out = self.linear_residual(out)
-        # Residual
+        # Process the residual blocks.
         for i in range(self.n_layers - 1):
             identity = out
             out = self._modules[f"linear_{i}_1"](out)
@@ -106,7 +106,7 @@ class TestResNet(nn.Module):
             out = self._modules[f"norm_{i}_2"](out)
             if self._with_residual:
                 if self._modules.get(f"linear_{i}_d") != None and self._modules.get(f"norm_{i}_d") != None:
-                    # downsample
+                    # Apply the configured feature projection.
                     out = self._modules[f"linear_{i}_d"](out)
                     out = self._modules[f"norm_{i}_d"](out)
                 out = self._add(out, identity)
@@ -123,7 +123,7 @@ class TestResNet(nn.Module):
             return out
         out = self.relu(out)
         out = self.linear_residual(out)
-        # Residual
+        # Process the residual blocks up to the requested pre-activation.
         for i in range(self.n_layers - 1):
             identity = out
             out = self._modules[f"linear_{i}_1"](out)
@@ -136,7 +136,7 @@ class TestResNet(nn.Module):
             out = self._modules[f"norm_{i}_2"](out)
             if self._with_residual:
                 if self._modules.get(f"linear_{i}_d") != None and self._modules.get(f"norm_{i}_d") != None:
-                    # downsample
+                    # Apply the configured feature projection.
                     out = self._modules[f"linear_{i}_d"](out)
                     out = self._modules[f"norm_{i}_d"](out)
                 out = self._add(out, identity)

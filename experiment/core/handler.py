@@ -34,7 +34,7 @@ class Handler(BaseHandler):
         self.points.append(point.cpu().numpy())
 
     def _init_inner_hyperplanes(self):
-        # {depth: [HyperplaneArrangement,]}
+        # Group parent-local hyperplane arrangements by network depth.
         self.hyperplane_arrangements: Dict[int, List[HyperplaneArrangement]] = dict()
         return self
 

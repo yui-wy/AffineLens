@@ -252,9 +252,9 @@ class CPAs(_cpa):
                 os.makedirs(save_dir, exist_ok=True)
                 net.load_state_dict(torch.load(os.path.join(self.model_dir, model_name), weights_only=False))
                 net.to(self.device)
-                # Accuracy
+                # Evaluate the checkpoint on the configured dataset.
                 acc = self._accuracy(net, val_dataloader)
-                # CPA
+                # Enumerate the checkpoint's affine regions on the bounded domain.
                 handler = Handler(self.is_draw, self.is_hpas)
                 logger = get_logger(
                     title=f"{randint(-100,100)}-region_{os.path.splitext(model_name)[0]}",

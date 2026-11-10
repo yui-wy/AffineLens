@@ -282,8 +282,7 @@ class ResNet(Model):
         self.inplanes = 64
         self.dilation = 1
         if replace_stride_with_dilation is None:
-            # each element in the tuple indicates if we should replace
-            # the 2x2 stride with a dilated convolution instead
+            # Each flag requests dilation instead of stride-2 downsampling.
             replace_stride_with_dilation = [False, False, False]
         if len(replace_stride_with_dilation) != 3:
             raise ValueError("replace_stride_with_dilation should be None " f"or a 3-element tuple, got {replace_stride_with_dilation}")
@@ -292,7 +291,7 @@ class ResNet(Model):
         self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = norm_layer(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
-        # Tips: Maxpool is not supported by this method.
+        # Use affine average pooling; enumeration does not track max-pool switches.
         self.avgpool1 = nn.AvgPool2d(kernel_size=3, stride=2, padding=1)
 
         self.layer1, s_depth = self._make_layer(block, 64, layers[0], s_depth=1)
@@ -313,8 +312,8 @@ class ResNet(Model):
                 nninit.constant_(m.bias, 0)
 
         # Zero-initialize the last BN in each residual branch,
-        # so that the residual branch starts with zeros, and each residual block behaves like an identity.
-        # This improves the model by 0.2~0.3% according to https://arxiv.org/abs/1706.02677
+        # so that it initially contributes zero before the shortcut addition.
+        # Initialization reference: https://arxiv.org/abs/1706.02677
         if zero_init_residual:
             for m in self.modules():
                 if isinstance(m, Bottleneck) and m.bn3.weight is not None:
@@ -376,7 +375,7 @@ class ResNet(Model):
         return seq, s_depth
 
     def _forward_impl(self, x: Tensor) -> Tensor:
-        # See note [TorchScript super()]
+        # Apply the stem, four residual stages, pooling, and affine readout.
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -447,8 +446,12 @@ def _resnet(
 
 
 def resnet1(*, weights: Optional[ResNet18_Weights] = None, progress: bool = True, **kwargs: Any) -> ResNet:
-    """两层，每层1个 BasicBlock 的 ResNet"""
-    # specify 2 stages with 1 block each, pad to 4 so ResNet ctor won't IndexError
+    """Build a ResNet using the stage configuration [1, 0, 0, 0].
+
+    The current layer builder creates at least one BasicBlock per stage, so
+    this configuration produces four stages with one block each.
+    """
+    # Supply all four stage entries expected by the ResNet constructor.
     weights = ResNet18_Weights.verify(weights)
     return _resnet(BasicBlock, [1, 0, 0, 0], weights, progress, **kwargs)
 
@@ -470,10 +473,9 @@ def resnet18(*, weights: Optional[ResNet34_Weights] = None, progress: bool = Tru
             weights are used.
         progress (bool, optional): If True, displays a progress bar of the
             download to stderr. Default is True.
-        **kwargs: parameters passed to the ``torchvision.models.resnet.ResNet``
-            base class. Please refer to the `source code
-            <https://github.com/pytorch/vision/blob/main/torchvision/models/resnet.py>`_
-            for more details about this class.
+        **kwargs: Parameters passed to ``torchays.models.resnet.ResNet``.
+            This implementation uses average pooling in the stem and a fixed
+            7-by-7 average pool before the classifier.
 
     .. autoclass:: torchvision.models.ResNet18_Weights
         :members:
@@ -495,10 +497,9 @@ def resnet34(*, weights: Optional[ResNet34_Weights] = None, progress: bool = Tru
             weights are used.
         progress (bool, optional): If True, displays a progress bar of the
             download to stderr. Default is True.
-        **kwargs: parameters passed to the ``torchvision.models.resnet.ResNet``
-            base class. Please refer to the `source code
-            <https://github.com/pytorch/vision/blob/main/torchvision/models/resnet.py>`_
-            for more details about this class.
+        **kwargs: Parameters passed to ``torchays.models.resnet.ResNet``.
+            This implementation uses average pooling in the stem and a fixed
+            7-by-7 average pool before the classifier.
 
     .. autoclass:: torchvision.models.ResNet34_Weights
         :members:
@@ -526,10 +527,9 @@ def resnet50(*, weights: Optional[ResNet50_Weights] = None, progress: bool = Tru
             weights are used.
         progress (bool, optional): If True, displays a progress bar of the
             download to stderr. Default is True.
-        **kwargs: parameters passed to the ``torchvision.models.resnet.ResNet``
-            base class. Please refer to the `source code
-            <https://github.com/pytorch/vision/blob/main/torchvision/models/resnet.py>`_
-            for more details about this class.
+        **kwargs: Parameters passed to ``torchays.models.resnet.ResNet``.
+            This implementation uses average pooling in the stem and a fixed
+            7-by-7 average pool before the classifier.
 
     .. autoclass:: torchvision.models.ResNet50_Weights
         :members:
@@ -557,10 +557,9 @@ def resnet101(*, weights: Optional[ResNet101_Weights] = None, progress: bool = T
             weights are used.
         progress (bool, optional): If True, displays a progress bar of the
             download to stderr. Default is True.
-        **kwargs: parameters passed to the ``torchvision.models.resnet.ResNet``
-            base class. Please refer to the `source code
-            <https://github.com/pytorch/vision/blob/main/torchvision/models/resnet.py>`_
-            for more details about this class.
+        **kwargs: Parameters passed to ``torchays.models.resnet.ResNet``.
+            This implementation uses average pooling in the stem and a fixed
+            7-by-7 average pool before the classifier.
 
     .. autoclass:: torchvision.models.ResNet101_Weights
         :members:
@@ -588,10 +587,9 @@ def resnet152(*, weights: Optional[ResNet152_Weights] = None, progress: bool = T
             weights are used.
         progress (bool, optional): If True, displays a progress bar of the
             download to stderr. Default is True.
-        **kwargs: parameters passed to the ``torchvision.models.resnet.ResNet``
-            base class. Please refer to the `source code
-            <https://github.com/pytorch/vision/blob/main/torchvision/models/resnet.py>`_
-            for more details about this class.
+        **kwargs: Parameters passed to ``torchays.models.resnet.ResNet``.
+            This implementation uses average pooling in the stem and a fixed
+            7-by-7 average pool before the classifier.
 
     .. autoclass:: torchvision.models.ResNet152_Weights
         :members:
@@ -614,10 +612,9 @@ def resnext50_32x4d(*, weights: Optional[ResNeXt50_32X4D_Weights] = None, progre
             weights are used.
         progress (bool, optional): If True, displays a progress bar of the
             download to stderr. Default is True.
-        **kwargs: parameters passed to the ``torchvision.models.resnet.ResNet``
-            base class. Please refer to the `source code
-            <https://github.com/pytorch/vision/blob/main/torchvision/models/resnet.py>`_
-            for more details about this class.
+        **kwargs: Parameters passed to ``torchays.models.resnet.ResNet``.
+            This implementation uses average pooling in the stem and a fixed
+            7-by-7 average pool before the classifier.
     .. autoclass:: torchvision.models.ResNeXt50_32X4D_Weights
         :members:
     """
@@ -641,10 +638,9 @@ def resnext101_32x8d(*, weights: Optional[ResNeXt101_32X8D_Weights] = None, prog
             weights are used.
         progress (bool, optional): If True, displays a progress bar of the
             download to stderr. Default is True.
-        **kwargs: parameters passed to the ``torchvision.models.resnet.ResNet``
-            base class. Please refer to the `source code
-            <https://github.com/pytorch/vision/blob/main/torchvision/models/resnet.py>`_
-            for more details about this class.
+        **kwargs: Parameters passed to ``torchays.models.resnet.ResNet``.
+            This implementation uses average pooling in the stem and a fixed
+            7-by-7 average pool before the classifier.
     .. autoclass:: torchvision.models.ResNeXt101_32X8D_Weights
         :members:
     """
@@ -668,10 +664,9 @@ def resnext101_64x4d(*, weights: Optional[ResNeXt101_64X4D_Weights] = None, prog
             weights are used.
         progress (bool, optional): If True, displays a progress bar of the
             download to stderr. Default is True.
-        **kwargs: parameters passed to the ``torchvision.models.resnet.ResNet``
-            base class. Please refer to the `source code
-            <https://github.com/pytorch/vision/blob/main/torchvision/models/resnet.py>`_
-            for more details about this class.
+        **kwargs: Parameters passed to ``torchays.models.resnet.ResNet``.
+            This implementation uses average pooling in the stem and a fixed
+            7-by-7 average pool before the classifier.
     .. autoclass:: torchvision.models.ResNeXt101_64X4D_Weights
         :members:
     """
@@ -700,10 +695,9 @@ def wide_resnet50_2(*, weights: Optional[Wide_ResNet50_2_Weights] = None, progre
             weights are used.
         progress (bool, optional): If True, displays a progress bar of the
             download to stderr. Default is True.
-        **kwargs: parameters passed to the ``torchvision.models.resnet.ResNet``
-            base class. Please refer to the `source code
-            <https://github.com/pytorch/vision/blob/main/torchvision/models/resnet.py>`_
-            for more details about this class.
+        **kwargs: Parameters passed to ``torchays.models.resnet.ResNet``.
+            This implementation uses average pooling in the stem and a fixed
+            7-by-7 average pool before the classifier.
     .. autoclass:: torchvision.models.Wide_ResNet50_2_Weights
         :members:
     """
@@ -731,10 +725,9 @@ def wide_resnet101_2(*, weights: Optional[Wide_ResNet101_2_Weights] = None, prog
             weights are used.
         progress (bool, optional): If True, displays a progress bar of the
             download to stderr. Default is True.
-        **kwargs: parameters passed to the ``torchvision.models.resnet.ResNet``
-            base class. Please refer to the `source code
-            <https://github.com/pytorch/vision/blob/main/torchvision/models/resnet.py>`_
-            for more details about this class.
+        **kwargs: Parameters passed to ``torchays.models.resnet.ResNet``.
+            This implementation uses average pooling in the stem and a fixed
+            7-by-7 average pool before the classifier.
     .. autoclass:: torchvision.models.Wide_ResNet101_2_Weights
         :members:
     """

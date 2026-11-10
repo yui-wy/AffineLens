@@ -35,9 +35,9 @@ def _2d_opr_weight_none(
     h_k, w_k = kernel_size
     # output_weight_graph: (n, c_out, h_out, w_out, *origin_size)
     output_weight_graph = torch.zeros((*output_size, *origin_size), device=device, dtype=dtype)
-    # hook_x: (n, c_out, c_in, h_in, w_in)
+    # hook_x: (n, c_out, c_in, h_in + 2*h_pad, w_in + 2*w_pad).
     hook_x = torch.zeros(n, out_channels, in_channels, h_in + h_pad * 2, w_in + w_pad * 2, device=device, dtype=dtype)
-    # origin
+    # Embed each output location's kernel in the original input coordinates.
     for h in range(h_out):
         for w in range(w_out):
             hook_x[:, :, :, h * h_stride : h * h_stride + h_k, w * w_stride : w * w_stride + w_k] += kernel_weight
@@ -66,22 +66,21 @@ def _2d_opr_weight(
     h_pad, w_pad = padding
     h_stride, w_stride = stride
     h_k, w_k = kernel_size
-    # output_weight_graph: (n, c_out, h_out, w_out, (*origin_size))
+    # output_weight_graph: (n, c_out, h_out, w_out, *origin_size).
     output_weight_graph = torch.zeros((*output_size, *origin_size), device=device, dtype=dtype)
-    # hook_kernel_weight: (w_out, c_out, c_in, k , w_in+2*padding)
+    # hook_kernel_weight: (w_out, c_out, c_in, h_k, w_in + 2*w_pad).
     hook_kernel_weight = torch.zeros(w_out, out_channels, in_channels, h_k, w_in + w_pad * 2, device=device, dtype=dtype)
     for w in range(w_out):
         hook_kernel_weight[w, :, :, :, w * w_stride : w * w_stride + w_k] += kernel_weight
-    # hook_kernel_weight : (w_out, c_out, c_in, k, w_in)
+    # Crop padding to obtain shape (w_out, c_out, c_in, h_k, w_in).
     hook_kernel_weight = hook_kernel_weight[:, :, :, :, w_pad : hook_kernel_weight.size(-1) - w_pad]
     for h in range(h_out):
         idx_start, idx_end, idx_start_kernal, idx_end_kernal = __get_h_idx(h, h_stride, h_pad, h_k, h_in)
-        # hook_kernel_weight_s: (w_out, c_out, (c_in, h_pos-, w_in)) -> ((c_in, h_pos-, w_in), c_out, w_out)
+        # Flatten the overlapping input patch to (patch_size, c_out * w_out).
         hook_kernel_weight_s = hook_kernel_weight[:, :, :, idx_start_kernal:idx_end_kernal].permute(2, 3, 4, 1, 0).reshape(-1, w_out * out_channels)
-        # pre_graph: (n, c_in, h_in, w_in, *origin_size)
-        # graph_hook: (n, (c_in, h_pos-, w_in), (origin_size)) -> (n, (origin_size), (c_in, h_pos-, w_in))
+        # Gather the matching weight graph as (n, origin_size.numel(), patch_size).
         hook_graph = weight_graph[:, :, idx_start:idx_end].reshape(n, -1, origin_size.numel()).permute(0, 2, 1)
-        # output_weight_graph:  (n, (origin_size), c_out, w_out) -> (n, c_out, w_out, *origin_size)
+        # Compose the maps and restore (n, c_out, w_out, *origin_size) for this row.
         output_weight_graph[:, :, h] = torch.matmul(hook_graph, hook_kernel_weight_s).permute(0, 2, 1).reshape(n, out_channels, w_out, *origin_size)
         del hook_graph, hook_kernel_weight_s
     del hook_kernel_weight
@@ -127,20 +126,19 @@ def avg_pool_2d(
     h_k, w_k = kernel_size
     # output_weight_graph: (n, c, h_out, w_out, *origin_size)
     output_weight_graph = torch.zeros((*output_size, *origin_size), device=device, dtype=dtype)
-    # hook_kernel_weight: (w_out, k, w_in+2*padding)
+    # hook_kernel_weight: (w_out, w_k, w_in + 2*w_pad).
     hook_kernel_weight = torch.zeros(w_out, w_k, w_in + w_pad * 2, device=device, dtype=dtype)
     for w in range(w_out):
         hook_kernel_weight[w, :, w * w_stride : w * w_stride + w_k] += kernel_weight
-    # hook_kernel_weight : (w_out, k, w_in)
+    # Crop padding to obtain shape (w_out, w_k, w_in).
     hook_kernel_weight = hook_kernel_weight[:, :, w_pad : hook_kernel_weight.size(-1) - w_pad]
     for h in range(h_out):
         idx_start, idx_end, idx_start_kernal, idx_end_kernal = __get_h_idx(h, h_stride, h_pad, h_k, h_in)
-        # hook_kernel_weight: (w_out, h_pos-, w_in) -> ((h_pos-, w_in), w_out)
+        # Flatten the overlapping spatial patch to (patch_size, w_out).
         hook_kernel_weight_s = hook_kernel_weight[:, idx_start_kernal:idx_end_kernal].reshape(w_out, -1).permute(1, 0)
-        # pre_graph: (n, c, h_in, w_in, *origin_size)
-        # graph_hook: (n, c, (h_pos-, w_in), (origin_size)) -> (n, c, (origin_size), (h_pos-, w_in))
+        # Gather the graph as (n, channels, origin_size.numel(), patch_size).
         hook_graph = weight_graph[:, :, idx_start:idx_end].reshape(n, channels, -1, origin_size.numel()).permute(0, 1, 3, 2)
-        # output_weight_graph:(n, c, *(origin_size), w_out) -> (n, c, w_out, *origin_size)
+        # Restore (n, channels, w_out, *origin_size) for this output row.
         output_weight_graph[:, :, h] = torch.matmul(hook_graph, hook_kernel_weight_s).permute(0, 1, 3, 2).reshape(n, channels, w_out, *origin_size)
         del hook_kernel_weight_s, hook_graph
     del hook_kernel_weight
@@ -164,11 +162,11 @@ def max_pool_2d(
     weight_graph = weight_graph.reshape(nc, -1, origin_size.numel())
     # bias_graph: (n, c, h_in, w_in) -> (n*c, h_in*w_in)
     bias_graph = bias_graph.reshape(nc, -1)
-    # output: (n, c, h_o, w_o, *origin_size) -> (n*c, h_o*w_o, (origin_size))
+    # Flatten output weights to (n*c, h_out*w_out, origin_size.numel()).
     wg = torch.zeros((n, channels, h_out, w_out, *origin_size), device=device, dtype=dtype).reshape(nc, -1, origin_size.numel())
     bg = torch.zeros((n, channels, h_out, w_out), device=device, dtype=dtype).reshape(nc, -1)
     for nc_i in range(nc):
-        # n_indices: (h_o*w_o)
+        # Input indices selected by max pooling for one batch/channel pair.
         nc_indices = indices[nc_i]
         wg[nc_i] = weight_graph[nc_i, nc_indices]
         bg[nc_i] = bias_graph[nc_i, nc_indices]

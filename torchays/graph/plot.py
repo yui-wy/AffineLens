@@ -83,10 +83,10 @@ def plot_regions_3d(
     ylim: List | Tuple = None,
     zlim: List | Tuple = None,
 ):
-    # 包含按序顶点idx的list
+    # Ordered vertex indices for each region polygon.
     regions_idxs: List[List[int]] = list()
-    # 输出顶点的集合, 并且标记顶点属于的面的idx
-    # 所有regions的顶点(x, y)
+    # Collect unique (x, y) vertices shared by the region polygons.
+    # regions_idxs records which vertices belong to each polygon.
     xy: np.ndarray = np.empty(shape=(0, 2))
     for idx in range(len(functions_list)):
         functions: np.ndarray = functions_list[idx]
@@ -108,8 +108,8 @@ def plot_regions_3d(
                 xy_idx = xy_idxs[0]
             region_idxs.append(xy_idx)
         regions_idxs.append(region_idxs)
-    # z: 所有regions的顶点的z坐标
-    # classes: 需要画图的标签列表
+    # z contains the heights at all collected vertices for each output class.
+    # classes selects the output classes to plot.
     z, classes = z_fun(xy)
     ploy_sets, ploy_colors = list(), list()
     for clz in classes:

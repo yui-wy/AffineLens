@@ -18,7 +18,7 @@ def bar(
 ) -> Tuple[List[float], List[int]]:
     values = torch.cat(values).reshape(-1)
     counts: Dict[float, int] = dict()
-    # interval
+    # Count values in bins centered at integer multiples of interval.
     for v in values:
         if callable is not None:
             v = callable(v)

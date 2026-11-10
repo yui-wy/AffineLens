@@ -11,9 +11,9 @@ class Linear(Module, nn.Linear):
         super().__init__(in_features, out_features, bias, device, dtype)
 
     def forward_graph(self, input: Tensor) -> Tensor:
-        """
-        Analyzing linear \n
-        graph_size: (n, out_feature, (*origin_size)))
+        """Propagate the affine map through this linear layer.
+
+        The weight graph has shape (batch_size, out_features, *origin_size).
         """
         output = nn.Linear.forward(self, input)
         input, weight_graph, bias_graph = check_graph(input)

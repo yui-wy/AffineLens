@@ -44,8 +44,7 @@ class _norm(nn.Module):
         # input: (n, num_features, ...)
         w_size = [1] * len(input.size())
         w_size[1] = -1
-        # weight: (num_features)
-        # bias,weight: (num_features)
+        # Broadcast the per-feature scale and bias across batch and spatial axes.
         weight = self.weight.view(*w_size)
         bias = self.bias.view(*w_size)
         return input * weight + bias

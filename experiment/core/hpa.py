@@ -48,14 +48,14 @@ class HyperplaneArrangements:
         return hpa.p_funs.size(1) - 1 == 2
 
     def statistics_intersect(self):
-        # Count the number of neurons in each layer that intersect with the parent region.
+        # Count neuron-induced hyperplanes intersecting each parent region, by depth.
         p_dir = os.path.join(self.root_dir, "hpa_statistics")
         os.makedirs(p_dir, exist_ok=True)
         counts_csv = CSV(os.path.join(p_dir, "counts.csv"))
         counts_statistic_csv = CSV(os.path.join(p_dir, "counts_statistic.csv"))
         counts_scales_csv = CSV(os.path.join(p_dir, "counts_scales.csv"))
         avg_csv = CSV(os.path.join(p_dir, "hpa_avg_regions.csv"))
-        # MAP: [depth, Dict[name, [List[int]]]]
+        # Map each depth to its neuron count and intersection-count histogram.
         statistic_dict: Dict[int, Dict[str, List[int] | int | Dict[int, List[int]]]] = dict()
 
         def statistic_fun(neural_num: int, num_list: List[int | float]):
@@ -76,18 +76,18 @@ class HyperplaneArrangements:
             counts_array = np.array(counts_list)
             counts_sum: np.ndarray = np.sum(counts_array)
             tag = f"{depth}/{neural_num}/{counts_sum.item()}"
-            #
+            # Record the intersection count for each parent region.
             counts_csv.add_row(tag, intersect_counts)
-            # 统计每个区域中相交的超平面的数量
+            # Record how many parent regions have each possible intersection count.
             counts_statistic_csv.add_row(tag, counts_list)
-            # 统计每个区域中相交超平面的数量占比
+            # Normalize the histogram to obtain the fraction of parent regions.
             counts_scales: np.ndarray = counts_array / counts_sum
             counts_scales_csv.add_row(tag, counts_scales.tolist())
-            # n个超平面能分割区域的平均数量
+            # Average the child-region count for each number of intersecting hyperplanes.
             sub_hpa_region_counts: Dict[int, List[int]] = statistic.get("sub_hpa_region_counts")
             avg_list = self._get_average(neural_num, sub_hpa_region_counts)
             avg_csv.add_row(tag, avg_list)
-            # save statistic
+            # Retain the per-depth histogram for plotting.
             depth_statistic: Dict[str, List[int | float]] = dict()
             depth_statistic[NEURAL_NUM] = neural_num
             depth_statistic[STATISTIC_COUNT] = counts_list
@@ -100,7 +100,7 @@ class HyperplaneArrangements:
                 csv.set_header(header_tag, header)
                 csv.save()
 
-        # save csv
+        # Save the raw counts and summary tables.
         counts_csv.save()
         save_csvs(counts_statistic_csv, counts_scales_csv, avg_csv)
         self._draw_statistic(p_dir, statistic_dict, max_neural_num, STATISTIC_COUNT, "statistic counts", "counts")
@@ -135,7 +135,7 @@ class HyperplaneArrangements:
         name: str = "",
         y_label: str = "",
     ):
-        # At different depths, count how many regions contain intermediate neurons and the number of intermediate neurons within each region.
+        # Plot per-depth histograms of the number of intersecting hyperplanes per parent region.
         if name == "":
             name = key
         fig = plt.figure(0, figsize=(8, 7), dpi=600)
@@ -183,7 +183,7 @@ class HyperplaneArrangements:
         if not self._check_dim(hpa):
             raise NotImplementedError("draw weight scatter can only be used on 2 dim.")
 
-        # weight of AX+b > 0
+        # Plot affine coefficients after normalizing by the spatial normal's length.
         def draw_weight(ax: plt.Axes, funs: torch.Tensor, color: Callable[[int], str], *args, **kwds) -> np.ndarray:
             scale_rate = (funs[:, 0].square() + funs[:, 1].square()).sqrt().unsqueeze(1)
             f_weight = (funs / scale_rate).numpy()
@@ -195,7 +195,7 @@ class HyperplaneArrangements:
         ax: plt.Axes = fig.add_subplot(projection="3d")
         ax.cla()
         ax.tick_params(labelsize=15)
-        # AX+B > 0
+        # Orient each parent constraint so its interior satisfies A x + b > 0.
         p_funs = hpa.p_funs * hpa.p_regions.unsqueeze(1)
         draw_weight(ax, p_funs, lambda _: color(0), marker="x")
         draw_weight(ax, hpa.c_funs, lambda _: color(2), marker="v")

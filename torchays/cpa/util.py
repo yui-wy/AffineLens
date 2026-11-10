@@ -28,21 +28,19 @@ def check_point(point: torch.Tensor, ws: torch.Tensor) -> bool:
 
 
 def vertify(x: torch.Tensor, functions: torch.Tensor, region: torch.Tensor) -> bool:
-    """
-    Verify that the current point x is in the region
-    """
+    """Check whether x satisfies the region's signed, closed halfspace constraints."""
     point = _get_regions(x, functions)
     return -1 not in region * point
 
 
 def _distance(x: torch.Tensor, hyperplanes: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     # x: [d]
-    # hyperplane: [n, d+1] (w: [n, d], b: [n])
+    # hyperplanes: [n, d + 1], with weights [n, d] and biases [n].
     W, B = hyperplanes[:, :-1], hyperplanes[:, -1]
     v = x @ W.T + B
     w_s = torch.sum(torch.square(W), dim=1)
     d = v / (w_s.sqrt() + 1e-16)
-    # return: [n]
+    # d, v, and w_s have shape [n]; W has shape [n, d] and B has shape [n].
     return d, v, w_s, W, B
 
 
@@ -52,9 +50,7 @@ def distance(x: torch.Tensor, hyperplanes: torch.Tensor) -> Tuple[torch.Tensor, 
 
 
 def find_projection(x: torch.Tensor, hyperplanes: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-    """
-    Find a point on the hyperplane that passes through x and is perpendicular to the hyperplane.
-    """
+    """Project x orthogonally onto each hyperplane and return squared normal norms."""
     _, v, w_s, W, _ = _distance(x, hyperplanes)
     t = (v / (w_s + 1e-16)).view(-1, 1)
     p_point = x - W * t

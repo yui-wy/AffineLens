@@ -54,14 +54,14 @@ class CPASet:
 
 
 class WapperRegion:
-    """
-    Get the region of the function list.
-    *  1 : f(x) > 0
-    * -1 : f(x) <= 0
+    """Queue candidate sign patterns and filter previously accepted regions.
+
+    ``get_regions`` assigns 1 to positive function values and -1 otherwise.
+    Region constraints use the corresponding closed halfspaces; filter entries
+    of 0 ignore constraints that are not needed to identify a region.
     """
 
-    # The maximum capacity of a tensor.
-    # If this value is reached, the calculation speed will slow down.
+    # Target element budget for each chunk of stored region filters.
     _upper = 32767
 
     def __init__(self, regions: torch.Tensor):
@@ -91,7 +91,7 @@ class WapperRegion:
         self.output: torch.Tensor = self.regions.popleft()
 
     def _check(self, region: torch.Tensor):
-        """Check if the region has been used."""
+        """Check whether a sign pattern matches an existing region filter."""
         try:
             including = False
             for filter in self.filters:

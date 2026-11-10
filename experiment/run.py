@@ -70,7 +70,7 @@ def net():
             # LeNet
             return LeNet()
         elif GLOBAL.TYPE == TYPE.CIFAR10:
-            # CIFARNet
+            # Select a fully connected or convolutional CIFAR-10 model.
             if CIFAR10.LINEAR:
                 return CIFARLinearNet(CIFAR10.NORM_LAYER)
             return CIFARNet(CIFAR10.NORM_LAYER)
@@ -82,7 +82,7 @@ def net():
         elif GLOBAL.TYPE == TYPE.TinyImageNet:
             model = resnet.resnet18 if IMAGENET.RESNET is None else IMAGENET.RESNET
             return model(num_classes=n_classes)
-        # Toy
+        # Models for toy datasets.
         if TESTNET.WITH_RESNET:
             return TestResNet(
                 in_features=TOY.IN_FEATURES,
@@ -144,10 +144,10 @@ def run(
             bounds=EXPERIMENT.BOUND,
             depth=EXPERIMENT.DEPTH,
         )
-    # run
+    # Run the configured training and region-analysis stages.
     exp.run()
 
-    # Analysis
+    # Generate the requested cross-checkpoint summaries and dataset plot.
     analysis = Analysis(
         root_dir=dataset.path,
         with_analysis=ANALYSIS.WITH_ANALYSIS,

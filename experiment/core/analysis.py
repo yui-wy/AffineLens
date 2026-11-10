@@ -19,7 +19,7 @@ class Analysis:
         self.with_dataset = with_dataset
 
     def analysis(self) -> None:
-        # Draw dataset distribution
+        # Draw the dataset distribution if requested.
         self.common()
         if not self.with_analysis:
             return
@@ -42,7 +42,7 @@ class Analysis:
             experiment_dict[tag] = tag_dict
         save_dir = os.path.join(self.root_dir, "analysis")
         os.makedirs(save_dir, exist_ok=True)
-        # Draw picture
+        # Save tables and plots comparing region counts, epochs, and accuracy.
         self.draw(experiment_dict, save_dir)
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:

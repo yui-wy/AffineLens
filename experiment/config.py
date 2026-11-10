@@ -134,7 +134,7 @@ class TYPE(_config):
 
 class COMMON(_config):
     GPU_ID: int = 7
-    # random seed
+    # Random seed.
     SEED: int = 5
 
 
@@ -144,12 +144,12 @@ class PATH(_config):
 
 
 class TOY(_config):
-    # All toy datasets
+    # Shared settings for toy datasets.
     IN_FEATURES: int = 2
     N_SAMPLES: int = 100
     N_CLASSES: int = 2
     BIAS: float = 0
-    # Moon
+    # Noise level for the two-moons dataset.
     NOISE: float = 0.2
 
 
@@ -178,7 +178,7 @@ class TESTNET(_config):
 
 class GLOBAL(_config):
     NAME: str = "Linear-[64]x3-batch-no_l2"
-    # ["Moon", "GaussianQuantiles", "Random", "Classification", "MNIST"]
+    # Dataset identifier from TYPE.
     TYPE: str = "Random"
 
 
@@ -191,34 +191,34 @@ class TRAIN(_config):
 
 
 class EXPERIMENT(_config):
-    # cpas
+    # Enumerate affine regions for saved model checkpoints.
     CPAS: bool = True
-    # point
+    # Analyze distances from input points to neuron-induced hyperplanes.
     POINT: bool = False
-    # Project, "None"
+    # Flattened input coordinates to vary; None disables input slicing.
     PROJ_DIM: Tuple[int] | None = None
-    # The values of projection including "PROJ_DIM" which is useless.
+    # Fixed input values; entries at PROJ_DIM are replaced by slice coordinates.
     PROJ_VALUES: torch.Tensor = torch.zeros((1, 28, 28)) + 0.5
-    # Bound for find cpa
+    # Lower and upper bounds for each coordinate of the analysis domain.
     BOUND: Tuple[int] = (-1, 1)
-    # The depth of the NN to draw
+    # Last zero-based hyperplane layer to enumerate; -1 uses the model's depth.
     DEPTH: int = -1
-    # The number of the workers
+    # Number of region-enumeration workers.
     WORKERS: int = 1
-    # With best epoch
+    # Include the checkpoint with the best training-set accuracy.
     WITH_BEST: bool = False
-    # Drawing
-    # is drawing the region picture. Only for 2d input.
+    # Draw region partitions for two-dimensional analysis domains.
     WITH_DRAW: bool = True
-    # is drawing the 3d region picture when "IS_DRAW" is True.
+    # Also draw output surfaces over the regions when WITH_DRAW is True.
     WITH_DRAW_3D: bool = False
-    # is handlering the hyperplanes arrangement.
+    # Draw the hyperplane arrangement within each parent region.
     WITH_DRAW_HPAS: bool = False
+    # Save statistics of intersecting hyperplanes and resulting subregions.
     WITH_STATISTIC_HPAS: bool = False
 
 
 class ANALYSIS(_config):
-    # Analysis
+    # Compare region counts and accuracy across saved checkpoints.
     WITH_ANALYSIS: bool = False
-    # draw the dataset distribution
+    # Plot the toy dataset distribution in two input dimensions.
     WITH_DATASET: bool = False

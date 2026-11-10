@@ -15,13 +15,15 @@ class Model(Module):
 
 
 class ProjectWrapper(Model):
-    """This implementation performs statistics on the slice linear regions of high-dimensional inputs.
-    This is achieved by encapsulating the original network with a linear layer.
+    """Analyze affine regions on a coordinate slice of a higher-dimensional input.
+
+    In graph mode, an affine input layer varies the selected coordinates and
+    fixes the remaining coordinates to their reference values.
 
     Args:
-        model: model which will be counted
-        proj_dims: the slice dims of the input
-        proj_values: the values of the other dims(including the slice dims but they are useless.)
+        model: Network to analyze.
+        proj_dims: Indices of the variable coordinates in the flattened input.
+        proj_values: Full-shaped reference input. Values at ``proj_dims`` are ignored.
     """
 
     def __init__(
@@ -48,16 +50,16 @@ class ProjectWrapper(Model):
         _bias = proj_values.view(-1).detach().float()
         for i in range(num_proj_dims):
             dim = proj_dims[i]
-            # bias is 0, weight is 1 for project dim.
+            # Copy this slice coordinate with unit weight and zero bias.
             _weight[dim][i] = 1
-            # others, weight is 0, bias is input；
+            # Unselected coordinates retain zero weights and their reference biases.
             _bias[dim] = 0
         self.wrapper_layers.weight = Parameter(_weight)
         self.wrapper_layers.bias = Parameter(_bias)
 
     def _forward(self, x):
         if self.wrapper and self.graphing:
-            # when finding CPAs
+            # Embed the slice and preserve its affine coefficients in graph mode.
             x: Tensor = self.wrapper_layers(x)
             output = x.view(x.size(0), *self._input_size)
             weight_graph = x.weight_graph.view(x.size(0), *self._input_size, *self.input_size)

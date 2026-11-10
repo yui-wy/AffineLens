@@ -22,10 +22,10 @@ def lineprog(
 
 
 def cheby_ball(funcs: np.ndarray) -> Tuple[np.ndarray, np.ndarray, bool]:
-    """
-    *   min_{x, r} -r
-    *   st. -ax+r||a|| <= b,
-    *       -ax <= b
+    """Find the largest Euclidean ball inside the halfspaces a @ x + b >= 0.
+
+    Minimize -r subject to -a @ x + r * ||a_i|| <= b and -a @ x <= b.
+    Return a center only when the solver succeeds with a positive radius.
     """
     a, b_ub = funcs[:, :-1], funcs[:, -1]
     c = np.negative(np.r_[np.zeros(np.shape(a)[1]), 1])
@@ -34,7 +34,7 @@ def cheby_ball(funcs: np.ndarray) -> Tuple[np.ndarray, np.ndarray, bool]:
     r_ub = np.c_[-a, norm]
     # -ax <= b
     a_ub = np.c_[-a, np.zeros_like(b_ub)]
-    # -------------
+    # Stack the ball-containment and center-feasibility constraints.
     a_ub = np.concatenate([r_ub, a_ub])
     b_ub = np.concatenate([b_ub, b_ub])
     sol = lineprog(c, a_ub, b_ub)
@@ -51,10 +51,11 @@ def lineprog_intersect(
     x0: np.ndarray,
     bounds: Any = None,
 ) -> bool:
-    """
-    *   min c @ x
-    *   st. A_ub @ x <= b_ub,
-    *       x[-1] = 1
+    """Test whether a hyperplane meets the constrained domain from x0's side.
+
+    Minimize the signed affine function using homogeneous coordinates with the
+    final coordinate fixed at 1. A nonpositive optimum accepts intersection,
+    including contact with the boundary.
     """
     c, b = func[:-1], func[-1]
     x0_r = c @ x0 + b

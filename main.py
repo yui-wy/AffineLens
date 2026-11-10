@@ -187,7 +187,7 @@ def random_proj(input_size: torch.Size | Iterable[int], dims: int = 2, bound=(-1
         input_size = torch.Size(input_size)
     kwargs = {}
     numel = input_size.numel()
-    # proj_dim
+    # Select distinct flattened input coordinates for the analysis slice.
     proj_dim = []
     for _ in range(dims):
         while True:
@@ -196,7 +196,7 @@ def random_proj(input_size: torch.Size | Iterable[int], dims: int = 2, bound=(-1
                 proj_dim.append(dim)
                 break
     kwargs["proj_dim"] = tuple(proj_dim)
-    # proj_values
+    # Set the fixed input values outside the selected coordinates.
     upper, lower = max(bound), min(bound)
     kwargs["proj_values"] = torch.rand(*input_size) * (upper - lower) + lower
     return kwargs
@@ -217,27 +217,27 @@ def main():
 if __name__ == "__main__":
     multiprocessing.set_start_method("spawn")
     # ====================================================================
-    # lab1：深度和神经元和输入维度，如何影响到区域数量的. ReLU激活函数, 不考虑BN.
-    # 验证：区域数量与深度和宽度的关系。
+    # lab1: Study how depth, width, and input dimension affect region counts.
+    # Use ReLU networks without batch normalization to examine depth and width.
     lab1_conf = [
         # Moon
-        # 1. 单层MLP情况下, 随着宽度增加, 区域数量的增长关系; (宽度于区域数量的关系)
+        # 1. Vary the width of a single-hidden-layer MLP and measure region counts.
         *[lab1(TYPE.Moon, [16 * (2**i)]) for i in range(0, 6)],
-        # 2. 多层MLP情况下, 每一层神经元数量固定, 如何影响到区域数量;
+        # 2. Vary MLP depth while keeping the width of each hidden layer fixed.
         *[lab1(TYPE.Moon, [16] * i) for i in range(2, 10)],
-        # 3. 多层MLP情况下, 随着某一层的宽度变动, 区域数量的增加关系;
+        # 3. Vary one hidden layer's width and measure the change in region counts.
         *[lab1(TYPE.Moon, [16, 16 * (2**i)]) for i in range(0, 5)],
         *[lab1(TYPE.Moon, [16 * (2**i), 16]) for i in range(0, 5)],
         # ====================================================================
         # Random-feat_2
-        # 1. 单层MLP情况下, 随着宽度增加, 区域数量的增长关系;
+        # 1. Vary the width of a single-hidden-layer MLP and measure region counts.
         *[lab1(TYPE.Random, [32 * (2**i)]) for i in range(0, 6)],
-        # 2. 多层MLP情况下, 每一层神经元数量固定, 如何影响到区域数量;
+        # 2. Vary MLP depth while keeping the width of each hidden layer fixed.
         *[lab1(TYPE.Random, [32] * i) for i in range(2, 10)],
-        # 3. 多层MLP情况下, 随着某一层的宽度变动, 区域数量的增加关系;
+        # 3. Vary one hidden layer's width and measure the change in region counts.
         *[lab1(TYPE.Random, [32, 32 * (2**i)]) for i in range(1, 4)],
         *[lab1(TYPE.Random, [32 * (2**i), 32]) for i in range(1, 4)],
-        # 4. 浅层宽度的增加与深层宽度的增加对区域带来的影响;
+        # 4. Compare widening an early hidden layer with widening a later one.
         *[lab1(TYPE.Random, [32 * (2**i), 32, 32, 32, 32]) for i in range(0, 4)],
         *[lab1(TYPE.Random, [32, 32 * (2**i), 32, 32, 32]) for i in range(1, 4)],
         *[lab1(TYPE.Random, [32, 32, 32 * (2**i), 32, 32]) for i in range(1, 4)],
@@ -245,20 +245,20 @@ if __name__ == "__main__":
         *[lab1(TYPE.Random, [32, 32, 32, 32, 32 * (2**i)]) for i in range(1, 4)],
         # ====================================================================
         # Random-feat_3
-        # 1. 单层MLP情况下, 随着宽度增加, 区域数量的增长关系;
+        # 1. Vary the width of a single-hidden-layer MLP and measure region counts.
         *[lab1(TYPE.Random, [16 * (2**i)], in_features=3) for i in range(0, 2)],
-        # 2. 多层MLP情况下, 每一层神经元数量固定, 如何影响到区域数量;
+        # 2. Vary MLP depth while keeping the width of each hidden layer fixed.
         *[lab1(TYPE.Random, [16] * i, in_features=3) for i in range(2, 4)],
-        # 3. 多层MLP情况下, 随着某一层的宽度变动, 区域数量的增加关系;
+        # 3. Vary one hidden layer's width and measure the change in region counts.
         *[lab1(TYPE.Random, [16, 16 * (2**i)], in_features=3) for i in range(0, 1)],
         *[lab1(TYPE.Random, [16 * (2**i), 16], in_features=3) for i in range(0, 1)],
         # ====================================================================
         # Random-feat_4
-        # 1. 单层MLP情况下, 随着宽度增加, 区域数量的增长关系;
+        # 1. Vary the width of a single-hidden-layer MLP and measure region counts.
         *[lab1(TYPE.Random, [16 * (2**i)], in_features=4) for i in range(3, 4)],
-        # 2. 多层MLP情况下, 每一层神经元数量固定, 如何影响到区域数量;
+        # 2. Vary MLP depth while keeping the width of each hidden layer fixed.
         *[lab1(TYPE.Random, [16] * i, in_features=4) for i in range(2, 4)],
-        # 3. 多层MLP情况下, 随着某一层的宽度变动, 区域数量的增加关系;
+        # 3. Vary one hidden layer's width and measure the change in region counts.
         *[lab1(TYPE.Random, [16, 16 * (2**i)], in_features=4) for i in range(1, 4)],
         *[lab1(TYPE.Random, [16 * (2**i), 16], in_features=4) for i in range(1, 4)],
         # ====================================================================
@@ -272,44 +272,44 @@ if __name__ == "__main__":
     ]
 
     # ====================================================================
-    # lab2：层级中, 线性区域中穿越的超平面数量的分析;
-    # 假设：随着层数增加，每一层的区域，会产生更少的子区域。（新增区域数量减少），且每个更多的区域只产生一个子区域。
+    # lab2: Analyze how many neuron-induced hyperplanes intersect each parent region.
+    # Hypothesis: At greater depths, parent regions produce fewer children on average,
+    # and a larger fraction of parent regions remain unsplit.
     lab2_conf = [
-        # Moon基础模型分析
+        # Baseline models on the two-moons dataset.
         lab2("Linear-[32,32,32]", TYPE.Moon, [32] * 3, nn.Norm1d),
-        # 对深层次的模型的分析
+        # Analyze deeper models.
         lab2("Linear-[32]x5", TYPE.Moon, [32] * 5, nn.Norm1d),
         lab2("Linear-[32]x10", TYPE.Moon, [32] * 10, nn.Norm1d),
-        # Random基础模型分析
+        # Baseline models on the random dataset.
         lab2("Linear-[32,32,32]", TYPE.Random, [32] * 3, nn.Norm1d),
-        # 对深层次的模型的分析
+        # Analyze deeper models.
         lab2("Linear-[32]x5", TYPE.Random, [32] * 5, nn.Norm1d),
         lab2("Linear-[32]x10", TYPE.Random, [32] * 10, nn.Norm1d),
-        # 64
-        # Moon基础模型分析
+        # Repeat with 64 neurons per hidden layer.
+        # Baseline models on the two-moons dataset.
         lab2("Linear-[64,64,64]", TYPE.Moon, [64] * 3, nn.Norm1d),
-        # 对深层次的模型的分析
+        # Analyze deeper models.
         lab2("Linear-[64]x5", TYPE.Moon, [64] * 5, nn.Norm1d),
         lab2("Linear-[64]x10", TYPE.Moon, [64] * 10, nn.Norm1d),
-        # Random基础模型分析
+        # Baseline models on the random dataset.
         lab2("Linear-[64,64,64]", TYPE.Random, [64] * 3, nn.Norm1d),
-        # 对深层次的模型的分析
+        # Analyze deeper models.
         lab2("Linear-[64]x5", TYPE.Random, [64] * 5, nn.Norm1d),
         lab2("Linear-[64]x10", TYPE.Random, [64] * 10, nn.Norm1d),
     ]
 
     # ====================================================================
-    # lab3：Analysis of the projection plane of the CNN linear region, unlike "splinecam".
+    # lab3: Analyze affine regions on two-coordinate input slices of CIFAR-10 models.
     lab3_conf = [
-        # CIFAI-10, Linear.
+        # CIFAR-10, fully connected model.
         *[lab3("CIFAR10-Linear", TYPE.CIFAR10, nn.Norm1d, linear=True, **random_proj((3, 32, 32))) for _ in range(10)],
         # CIFAR-10, CNN.
         *[lab3("CIFAR10-CNN", TYPE.CIFAR10, nn.Norm2d, linear=False, **random_proj((3, 32, 32))) for _ in range(10)],
     ]
 
-    # lab5: Image-net, resnet-18
-    # Because as the number of layers increases, greater errors are generated during the calculation process.
-    # These errors can lead to inaccuracies in the number of linear regions and deviations in the drawn image.
+    # lab5: Analyze Tiny ImageNet ResNet-18 input slices at several depths.
+    # Numerical errors can accumulate with depth and affect region counts and plots.
     lab5_conf = [
         *[
             lab5(

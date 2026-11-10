@@ -17,7 +17,7 @@ class ParamReLU(Module):
 
         origin_size = self._origin_size(input)
         graph_size = input.weight_graph.size()
-        # ((*input.shape)), (*origin_size)), ((*input.shape))
+        # Weight shape: (*input.shape, *origin_size); bias shape: input.shape.
         wg, bg = torch.zeros(graph_size, device=input.device, dtype=input.dtype), torch.zeros(*input.size(), device=input.device, dtype=input.dtype)
         active_slope = torch.ones((1), device=input.device, dtype=input.dtype) * self._active_slope
         negative_slope = torch.ones((1), device=input.device, dtype=input.dtype) * self._negative_slope

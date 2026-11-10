@@ -41,15 +41,14 @@ def set_graph(x: Tensor, wg: torch.Tensor = None, bg: torch.Tensor = None):
 
 
 class Module(nn.Module):
-    """
-    Getting weight_graph and bias_graph from network.
+    """Extend a PyTorch module with affine-coefficient propagation in graph mode.
 
-    Coding:
-            >>> net.graph()
-            >>> with torch.no_grad():
-                    # out -> (output, graph)
-                    # graph is a dict with "weight_graph", "bias_graph"
-                    output, graph = net(input)
+    The output tensor carries ``weight_graph`` and ``bias_graph`` attributes:
+
+        >>> net.graph()
+        >>> with torch.no_grad():
+        ...     output = net(input)
+        ...     weight, bias = output.weight_graph, output.bias_graph
     """
 
     def __init__(self, *args, **kwargs) -> None:

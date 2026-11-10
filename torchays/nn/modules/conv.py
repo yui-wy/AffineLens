@@ -27,7 +27,7 @@ class Conv2d(Module, nn.Conv2d):
         super().__init__(in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias, padding_mode, device, dtype)
         assert self.padding_mode == 'zeros', "Dont support other mode"
         assert self.dilation == _pair(1), "Dont support other dilation."
-        # TODO: Support the groups.
+        # TODO: Support grouped convolutions in affine-coefficient propagation.
         assert self.groups == 1, "Dont support other mode"
 
     def forward_graph(self, input: Tensor) -> Tensor:

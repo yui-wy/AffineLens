@@ -19,10 +19,10 @@ class _BatchNorm(Module, nn.modules.batchnorm._BatchNorm):
         assert self.track_running_stats, "Please set track_running_stats = True"
 
     def forward_graph(self, input: Tensor) -> Tensor:
-        """
-        Analyzing BatchNorm2d \n
-        track_running_stats = True->Using saving var and mean.
-        graph_size: ((*input.shape)), (*origin_size))
+        """Propagate affine coefficients using frozen BatchNorm statistics.
+
+        Graph mode uses the stored running mean and variance. The weight graph
+        has shape (*input.shape, *origin_size).
         """
         output = nn.modules.batchnorm._BatchNorm.forward(self, input)
         input, weight_graph, bias_graph = check_graph(input)

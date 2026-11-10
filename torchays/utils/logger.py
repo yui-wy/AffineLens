@@ -9,7 +9,7 @@ class Logger(logging.Logger):
     def setting(self, *handlers: logging.Handler, multi: bool = False):
         self.multi = False
         self.propagate = False
-        # On windows, spawn model can not use the queue.
+        # Use a manager-backed queue when multiprocessing logging is requested.
         if multi:
             self.multi = True
             self._set_multi_processing(handlers)
