@@ -287,7 +287,7 @@ class CPAs(_cpa):
                 result = {"regions": count, "accuracy": f"{acc:.4f}"}
                 with open(os.path.join(save_dir, "results.json"), "w") as w:
                     json.dump(result, w)
-                if handler is not None:
+                if handler is not None and self.is_draw:
                     data_dict = {
                         "funcs": handler.funs,
                         "regions": handler.regions,

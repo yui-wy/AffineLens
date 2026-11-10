@@ -1,12 +1,37 @@
 import multiprocessing
 import random
+from copy import deepcopy
 from typing import Callable, Iterable, List, Tuple
 
 import torch
 
-from experiment import ANALYSIS, CIFAR10, COMMON, EXPERIMENT, GLOBAL, IMAGENET, PATH, TESTNET, TOY, TRAIN, TYPE, dataset, net, proj_net, run
+from experiment import ANALYSIS, CIFAR10, COMMON, EXPERIMENT, GLOBAL, IMAGENET, MNIST, PATH, TESTNET, TOY, TRAIN, TYPE, dataset, net, proj_net, run
 from torchays import nn
 from torchays.models import resnet
+
+_CONFIG_CLASSES = (
+    COMMON,
+    PATH,
+    TOY,
+    MNIST,
+    CIFAR10,
+    IMAGENET,
+    TESTNET,
+    GLOBAL,
+    TRAIN,
+    EXPERIMENT,
+    ANALYSIS,
+)
+
+# Capture defaults before any experiment changes the configuration.
+_DEFAULT_CONFIGS = {cls: {key: deepcopy(value) for key, value in vars(cls).items() if key.isupper()} for cls in _CONFIG_CLASSES}
+
+
+def reset_config():
+    """Restore independent copies of the default configuration values."""
+    for cls, defaults in _DEFAULT_CONFIGS.items():
+        for key, value in defaults.items():
+            setattr(cls, key, deepcopy(value))
 
 
 def config():
@@ -34,10 +59,16 @@ def set_config(
     type: str,
     batch_size: int = 64,
 ):
+    # Restore defaults from experiment/config.py.
+    reset_config()
+
+    # Apply the shared settings defined in main.py.
+    config()
+
+    # Apply parameters for the current experiment.
     GLOBAL.NAME = name
     GLOBAL.TYPE = type
     TRAIN.BATCH_SIZE = batch_size
-    config()
 
 
 def lab1(
@@ -54,8 +85,8 @@ def lab1(
     kwargs = {}
 
     def config_fn():
-        PATH.TAG = "CPAExploration-lab1"
         set_config(*args, **kwargs)
+        PATH.TAG = "CPAExploration-lab1"
 
         TESTNET.N_LAYERS = n_layers
         TESTNET.NORM_LAYER = norm_layer
@@ -83,12 +114,13 @@ def lab1_residual(
     name = f"ResNetLinear-{with_residual}-{n_layers}".replace(" ", "")
     if in_features > 2:
         name += f"-feat_{in_features}"
-    args = (name, type)
-    kwargs = {}
 
     def config_fn():
+        # Initialize once and apply the complete lab1 configuration.
         lab1_fn()
-        set_config(*args, **kwargs)
+        # Override only the settings specific to this residual experiment.
+        GLOBAL.NAME = name
+
         TESTNET.WITH_RESNET = True
         TESTNET.WITH_RESIDUAL = with_residual
 
@@ -106,8 +138,8 @@ def lab2(
     kwargs = {}
 
     def config_fn():
-        PATH.TAG = "CPAExploration-lab2"
         set_config(*args, **kwargs)
+        PATH.TAG = "CPAExploration-lab2"
         TOY.IN_FEATURES = in_features
         TOY.N_SAMPLES = 200
 
@@ -135,8 +167,8 @@ def lab3(
     kwargs = {"batch_size": 256}
 
     def config_fn():
-        PATH.TAG = "CPAExploration-lab3"
         set_config(*args, **kwargs)
+        PATH.TAG = "CPAExploration-lab3"
         TRAIN.MAX_EPOCH = 500
 
         CIFAR10.NORM_LAYER = norm_layer
@@ -159,8 +191,8 @@ def lab5(
     kwargs = {"batch_size": batch_size}
 
     def config_fn():
-        PATH.TAG = "CPAExploration-lab5"
         set_config(*args, **kwargs)
+        PATH.TAG = "CPAExploration-lab5"
 
         TRAIN.TRAIN = False
         TRAIN.MAX_EPOCH = 30
@@ -191,7 +223,7 @@ def random_proj(input_size: torch.Size | Iterable[int], dims: int = 2, bound=(-1
     proj_dim = []
     for _ in range(dims):
         while True:
-            dim = random.randint(0, numel)
+            dim = random.randrange(numel)
             if dim not in proj_dim:
                 proj_dim.append(dim)
                 break

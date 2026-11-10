@@ -126,7 +126,7 @@ def log_time(fun_name: str, indent: int = 0, logging: bool = True):
     def wapper(fun: Callable):
         def new_func(self: LogClz, *args, **kwargs):
             if not self.logging:
-                return result
+                return fun(self, *args, **kwargs)
             start = time.time()
             result = fun(self, *args, **kwargs)
             t = time.time() - start
